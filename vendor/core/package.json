@@ -1,0 +1,17 @@
+{
+  "name": "apitu",
+  "version": "3.1.0",
+  "private": true,
+  "type": "module",
+  "description": "JSON-IR diagram renderers (roadmap / architecture / workflow / sequence / dataflow / lifecycle).",
+  "license": "MIT",
+  "bin": {
+    "apitu": "./bin/apitu.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "overrides": {
+    "fast-uri": "^3.1.7"
+  }
+}

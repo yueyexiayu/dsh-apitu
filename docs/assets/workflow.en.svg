@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 160" role="img" aria-labelledby="t d">
+  <title id="t">apitu workflow schematic</title>
+  <desc id="d">The session writes JSON, the CLI runs under danger-full-access, and the sidebar opens local HTML. Schematic, not a screenshot.</desc>
+  <rect width="960" height="160" rx="20" fill="#f4faf7"/>
+  <rect x="24" y="28" width="200" height="104" rx="14" fill="#fff" stroke="#3d8f7a"/>
+  <text x="124" y="76" text-anchor="middle" fill="#16302c" font-family="ui-sans-serif,system-ui,sans-serif" font-size="16">1 Session JSON</text>
+  <text x="124" y="100" text-anchor="middle" fill="#4d6f67" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12">schema / repo evidence</text>
+  <rect x="260" y="28" width="200" height="104" rx="14" fill="#fff" stroke="#7a6bb8"/>
+  <text x="360" y="76" text-anchor="middle" fill="#1b2438" font-family="ui-sans-serif,system-ui,sans-serif" font-size="16">2 apitu tool</text>
+  <text x="360" y="100" text-anchor="middle" fill="#5c5678" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12">guide / run / preview</text>
+  <rect x="496" y="28" width="200" height="104" rx="14" fill="#fff" stroke="#c9a227"/>
+  <text x="596" y="76" text-anchor="middle" fill="#16302c" font-family="ui-sans-serif,system-ui,sans-serif" font-size="16">3 CLI finalize</text>
+  <text x="596" y="100" text-anchor="middle" fill="#6a5a20" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12">danger-full-access</text>
+  <rect x="732" y="28" width="204" height="104" rx="14" fill="#fff" stroke="#3d8f7a"/>
+  <text x="834" y="76" text-anchor="middle" fill="#16302c" font-family="ui-sans-serif,system-ui,sans-serif" font-size="16">4 Open HTML</text>
+  <text x="834" y="100" text-anchor="middle" fill="#4d6f67" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12">sidebar / local file</text>
+</svg>

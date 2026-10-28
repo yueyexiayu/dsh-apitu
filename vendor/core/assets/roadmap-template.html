@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apitu-diagram-type" content="roadmap" />
+  <meta name="apitu-quality-profile" content="roadmap-v1" />
+  <title>__APITU_TITLE__</title>
+  <style>
+
+    :root {
+      --ink: #1c1712;
+      --paper: #f3ead6;
+      --panel: #231c16;
+      --panel-2: #2c241c;
+      --gold: #d6b15a;
+      --gold-2: #f0d48a;
+      --jade: #3f8f78;
+      --jade-2: #7ed0b6;
+      --coral: #d06545;
+      --sky: #6aa7c8;
+      --muted: #b7a894;
+      --line: rgba(240, 212, 138, 0.35);
+      --shadow: 0 24px 60px rgba(28, 23, 18, 0.28);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 10% -10%, rgba(214, 177, 90, 0.18), transparent 50%),
+        radial-gradient(900px 400px at 100% 0%, rgba(63, 143, 120, 0.12), transparent 45%),
+        var(--paper);
+      font-family: "Songti SC", "Source Han Serif SC", "Noto Serif SC", "Iowan Old Style", Georgia, serif;
+    }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 36px 28px 80px; }
+    header.hero {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+    .eyebrow {
+      font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+      letter-spacing: 0.28em;
+      font-size: 12px;
+      color: #7a6850;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-weight: 600;
+      font-size: clamp(32px, 5vw, 54px);
+      line-height: 1.12;
+      margin: 8px 0 12px;
+    }
+    .lede {
+      font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #4d4337;
+      max-width: 62ch;
+    }
+    .meta {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;
+    }
+    .chip {
+      font-family: "PingFang SC", sans-serif;
+      font-size: 12px;
+      padding: 6px 10px;
+      border: 1px solid rgba(28,23,18,0.12);
+      background: rgba(255,255,255,0.45);
+      border-radius: 999px;
+    }
+    nav.toc {
+      display: flex; flex-wrap: wrap; gap: 10px 16px;
+      font-family: "PingFang SC", sans-serif;
+      font-size: 13px;
+      margin: 8px 0 28px;
+    }
+    nav.toc a { color: #5b4c3a; text-decoration: none; border-bottom: 1px dashed rgba(91,76,58,0.35); }
+    nav.toc a:hover { color: var(--coral); }
+    .map-card {
+      background: linear-gradient(180deg, var(--panel), #18130f 70%);
+      color: var(--paper);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin: 18px 0 32px;
+      position: relative;
+    }
+    .map-card::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(214,177,90,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(214,177,90,0.05) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+    .map-head {
+      position: relative;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      padding: 22px 24px 8px;
+      font-family: "PingFang SC", sans-serif;
+    }
+    .map-head h2 { margin: 4px 0 0; font-family: inherit; font-size: 22px; color: var(--gold-2); }
+    .map-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .map-actions button {
+      appearance: none; border: 1px solid var(--line); background: transparent;
+      color: var(--gold-2); border-radius: 999px; padding: 6px 12px; cursor: pointer;
+      font-family: inherit; font-size: 12px;
+    }
+    .map-actions button.active, .map-actions button:hover { background: rgba(214,177,90,0.16); }
+    .map-viewport {
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: none;
+      overscroll-behavior: contain;
+      user-select: none;
+    }
+    .map-viewport.is-panning { cursor: grabbing; }
+    .zoom-readout {
+      position: absolute;
+      right: 16px;
+      bottom: 12px;
+      z-index: 2;
+      font-family: "PingFang SC", sans-serif;
+      font-size: 11px;
+      color: var(--gold-2);
+      background: rgba(24, 19, 15, 0.72);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      pointer-events: none;
+    }
+    svg.map { width: 100%; height: auto; display: block; position: relative; }
+    .route {
+      fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .route.auto {
+      stroke-dasharray: 10 14;
+      animation: crawl 1.8s linear infinite;
+    }
+    .route.manual {
+      stroke-dasharray: none;
+      opacity: 0.92;
+    }
+    .route.gap {
+      stroke: #9a8674;
+      stroke-width: 3.5;
+      stroke-dasharray: 3 11;
+    }
+    .route.gold { stroke: var(--gold); }
+    .route.jade { stroke: var(--jade-2); }
+    .route.coral { stroke: var(--coral); }
+    .route.sky { stroke: var(--sky); }
+    .route.dim { opacity: 0.18; animation-play-state: paused; }
+    #api-map .route {
+      stroke-dasharray: 10 14;
+      animation: crawl 1.8s linear infinite;
+    }
+    .route.lit { filter: drop-shadow(0 0 6px currentColor); stroke-width: 4; }
+    @keyframes crawl { to { stroke-dashoffset: -48; } }
+    .legend-dot { display: inline-block; width: 18px; height: 3px; margin: 0 6px 3px 0; vertical-align: middle; }
+    .legend-dot.auto { background: var(--gold); box-shadow: 8px 0 0 var(--gold); }
+    .legend-dot.manual { background: var(--jade-2); }
+    .legend-dot.gap { background: repeating-linear-gradient(90deg, #9a8674 0 6px, transparent 6px 10px); }
+    .station { cursor: pointer; }
+    .station circle.node { transition: r .2s ease, fill .2s ease; }
+    .station:hover circle.node, .station.active circle.node { r: 11; }
+    .station text {
+      font-family: "PingFang SC", sans-serif;
+      font-size: 12px;
+      fill: #f6ecda;
+      pointer-events: none;
+    }
+    .station .sub { fill: var(--muted); font-size: 10px; }
+    .station .num-bg { fill: #f0d48a; stroke: #1c1712; stroke-width: 0.6; }
+    .station .num {
+      font-family: "SF Mono", "Menlo", sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      fill: #1c1712;
+      text-anchor: middle;
+    }
+    .index-list {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 6px 16px;
+      padding: 0 24px 18px;
+      font-family: "PingFang SC", sans-serif;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .index-list b { color: var(--gold-2); font-family: "SF Mono", Menlo, monospace; }
+    .packet { pointer-events: none; fill: #fff6d8; stroke: var(--gold); stroke-width: 1.5; filter: drop-shadow(0 0 6px #f0d48a); }
+    .hint {
+      position: relative;
+      padding: 0 24px 20px;
+      font-family: "PingFang SC", sans-serif;
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 48px;
+    }
+    .hint b { color: var(--gold-2); font-weight: 600; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .panel {
+      background: rgba(255,255,255,0.48);
+      border: 1px solid rgba(28,23,18,0.08);
+      border-radius: 16px;
+      padding: 18px 20px;
+    }
+    .panel h3 { margin: 0 0 10px; font-size: 20px; }
+    .panel p, .panel li {
+      font-family: "PingFang SC", sans-serif;
+      font-size: 14px;
+      line-height: 1.75;
+      color: #3f362c;
+    }
+    table {
+      width: 100%; border-collapse: collapse;
+      font-family: "PingFang SC", sans-serif; font-size: 13px;
+    }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid rgba(28,23,18,0.08); vertical-align: top; }
+    th { color: #7a6850; font-weight: 600; }
+    code, .mono {
+      font-family: "SF Mono", "Menlo", "Source Code Pro", monospace;
+      font-size: 12px;
+      background: rgba(28,23,18,0.06);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .api-row { display: flex; gap: 8px; align-items: baseline; margin: 8px 0; }
+    .verb {
+      font-family: "SF Mono", monospace; font-size: 11px; min-width: 64px;
+      padding: 2px 6px; border-radius: 4px; color: #fff; text-align: center;
+    }
+    .GET { background: #3f8f78; }
+    .POST { background: #c45c3e; }
+    .PATCH { background: #b8860b; }
+    .DELETE { background: #6b4c7a; }
+    .MULTI { background: #355c7d; }
+    section { margin: 36px 0; }
+    footer {
+      margin-top: 48px; color: #7a6850;
+      font-family: "PingFang SC", sans-serif; font-size: 12px;
+    }
+    @media (max-width: 900px) {
+      header.hero, .grid-2 { grid-template-columns: 1fr; }
+      .map-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .wrap { padding: 24px 12px 48px; }
+      .panel { min-width: 0; overflow-wrap: anywhere; }
+      .map-head h2 { overflow-wrap: anywhere; }
+      .api-row { flex-wrap: wrap; }
+      .map-viewport { min-height: 280px; }
+      svg.map { min-width: 650px; }
+    }
+  </style>
+</head>
+<body data-apitu-type="roadmap">
+  <div class="wrap">__APITU_BODY__</div>
+
+  <script>
+    const FLOW = __APITU_FLOW__;
+    const API = __APITU_API__;
+
+    const flowHint = document.getElementById("flow-hint");
+    const apiHint = document.getElementById("api-hint");
+
+    function setLineFilter(line) {
+      document.querySelectorAll("#flow-map .route").forEach((el) => {
+        const match = line === "all" || el.dataset.line === line || el.dataset.kind === line;
+        el.classList.toggle("dim", !match);
+      });
+      document.querySelectorAll("#flow .map-actions button").forEach((btn) => {
+        const key = btn.dataset.line || btn.dataset.kind;
+        btn.classList.toggle("active", key === line);
+      });
+    }
+    function setApiFilter(kind) {
+      document.querySelectorAll("#api-map .route").forEach((el) => {
+        const match = kind === "all" || el.dataset.api === kind;
+        el.classList.toggle("dim", !match);
+      });
+      document.querySelectorAll(".map-actions [data-api]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.api === kind);
+      });
+    }
+    document.querySelectorAll("#flow .map-actions [data-line], #flow .map-actions [data-kind]").forEach((btn) => {
+      btn.addEventListener("click", () => setLineFilter(btn.dataset.line || btn.dataset.kind));
+    });
+    document.querySelectorAll(".map-actions [data-api]").forEach((btn) => {
+      btn.addEventListener("click", () => setApiFilter(btn.dataset.api));
+    });
+
+    function bindStations(svgId, dict, hintEl) {
+      const svg = document.getElementById(svgId);
+      svg.querySelectorAll(".station").forEach((g) => {
+        g.addEventListener("click", () => {
+          svg.querySelectorAll(".station").forEach((x) => x.classList.remove("active"));
+          g.classList.add("active");
+          const info = dict[g.dataset.key];
+          if (info) hintEl.innerHTML = "<b>" + info.title + "</b> · " + info.body;
+        });
+      });
+    }
+    bindStations("flow-map", FLOW, flowHint);
+    bindStations("api-map", API, apiHint);
+
+    function enableMapZoom(svg) {
+      const layer = svg.querySelector(".zoom-layer");
+      const viewport = svg.closest(".map-viewport");
+      const label = document.querySelector('[data-zoom-label="' + svg.id + '"]');
+      if (!layer || !viewport) return;
+      const min = 1;
+      const max = 5;
+      let scale = 1;
+      let tx = 0;
+      let ty = 0;
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      function apply() {
+        layer.setAttribute("transform", "translate(" + tx + " " + ty + ") scale(" + scale + ")");
+        if (label) label.textContent = Math.round(scale * 100) + "%";
+      }
+      function reset() {
+        scale = 1;
+        tx = 0;
+        ty = 0;
+        apply();
+      }
+      function svgPoint(clientX, clientY) {
+        const rect = svg.getBoundingClientRect();
+        const vb = svg.viewBox.baseVal;
+        return {
+          x: ((clientX - rect.left) / rect.width) * vb.width,
+          y: ((clientY - rect.top) / rect.height) * vb.height
+        };
+      }
+      viewport.addEventListener("wheel", (event) => {
+        event.preventDefault();
+        const factor = event.deltaY < 0 ? 1.12 : 1 / 1.12;
+        const next = Math.min(max, Math.max(min, scale * factor));
+        const cursor = svgPoint(event.clientX, event.clientY);
+        const wx = (cursor.x - tx) / scale;
+        const wy = (cursor.y - ty) / scale;
+        scale = next;
+        tx = cursor.x - wx * scale;
+        ty = cursor.y - wy * scale;
+        if (scale <= 1.001) {
+          scale = 1;
+          tx = 0;
+          ty = 0;
+        }
+        apply();
+      }, { passive: false });
+      viewport.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0) return;
+        dragging = true;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        viewport.classList.add("is-panning");
+        if (!event.target.closest(".station")) viewport.setPointerCapture(event.pointerId);
+      });
+      viewport.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        const rect = svg.getBoundingClientRect();
+        const vb = svg.viewBox.baseVal;
+        tx += ((event.clientX - lastX) / rect.width) * vb.width;
+        ty += ((event.clientY - lastY) / rect.height) * vb.height;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        apply();
+      });
+      function endPan(event) {
+        if (!dragging) return;
+        dragging = false;
+        viewport.classList.remove("is-panning");
+        if (event && viewport.hasPointerCapture(event.pointerId)) {
+          viewport.releasePointerCapture(event.pointerId);
+        }
+      }
+      viewport.addEventListener("pointerup", endPan);
+      viewport.addEventListener("pointercancel", endPan);
+      viewport.addEventListener("dblclick", reset);
+      const resetBtn = document.querySelector('[data-reset-zoom="' + svg.id + '"]');
+      if (resetBtn) resetBtn.addEventListener("click", reset);
+      apply();
+    }
+
+    function spawnPackets(svg, pathSelector) {
+      const ns = "http://www.w3.org/2000/svg";
+      const layer = svg.querySelector(".zoom-layer") || svg;
+      svg.querySelectorAll(pathSelector).forEach((path, index) => {
+        const packet = document.createElementNS(ns, "circle");
+        packet.setAttribute("r", "4.5");
+        packet.setAttribute("class", "packet");
+        layer.appendChild(packet);
+        const len = path.getTotalLength();
+        const duration = 4200 + (index % 5) * 700;
+        const offset = (index * 800) % duration;
+        function tick(now) {
+          if (path.classList.contains("dim")) {
+            packet.setAttribute("opacity", "0");
+          } else {
+            packet.setAttribute("opacity", "1");
+            const t = ((now + offset) % duration) / duration;
+            const p = path.getPointAtLength(t * len);
+            packet.setAttribute("cx", p.x);
+            packet.setAttribute("cy", p.y);
+          }
+          requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+    }
+    enableMapZoom(document.getElementById("flow-map"));
+    enableMapZoom(document.getElementById("api-map"));
+    spawnPackets(document.getElementById("flow-map"), ".route.auto");
+    spawnPackets(document.getElementById("api-map"), ".route");
+  </script>
+</body>
+</html>

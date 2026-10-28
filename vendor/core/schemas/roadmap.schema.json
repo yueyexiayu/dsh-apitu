@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apitu.local/schemas/roadmap.schema.json",
+  "title": "api-sheji feature and API roadmap v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "meta", "flow", "api", "rules", "consumption", "lifecycle", "pages_commands", "boundaries"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "meta": {
+      "type": "object", "additionalProperties": false,
+      "required": ["title", "eyebrow", "description", "checked_at", "runtime_flags"],
+      "properties": {
+        "title": {"type": "string", "minLength": 1, "maxLength": 120},
+        "eyebrow": {"type": "string", "minLength": 1, "maxLength": 120},
+        "description": {"$ref": "#/$defs/description"},
+        "checked_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+        "runtime_flags": {"type": "array", "minItems": 1, "maxItems": 12, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 240}},
+        "output": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "\\.html$"}
+      }
+    },
+    "flow": {"$ref": "#/$defs/map"},
+    "api": {"allOf": [{"$ref": "#/$defs/map"}, {"properties": {"routes": {"items": {"properties": {"kind": {"const": "auto"}}}}}}]},
+    "rules": {"$ref": "#/$defs/entries"},
+    "consumption": {"$ref": "#/$defs/entries"},
+    "lifecycle": {"$ref": "#/$defs/entries"},
+    "pages_commands": {"type": "array", "maxItems": 32, "items": {"type": "object", "additionalProperties": false, "required": ["title", "description"], "properties": {"title": {"$ref": "#/$defs/entryTitle"}, "description": {"$ref": "#/$defs/description"}, "command": {"type": "string", "minLength": 1, "maxLength": 512}}}},
+    "boundaries": {"type": "array", "minItems": 1, "maxItems": 32, "items": {"$ref": "#/$defs/description"}}
+  },
+  "$defs": {
+    "description": {"type": "string", "minLength": 1, "maxLength": 2400},
+    "entryTitle": {"type": "string", "minLength": 1, "maxLength": 120},
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"},
+    "kind": {"enum": ["auto", "manual", "gap"]},
+    "coordinate": {"type": "number", "minimum": 0, "maximum": 1180},
+    "point": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/coordinate"}},
+    "station": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "label", "subtitle", "description", "kind"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 40},
+        "subtitle": {"type": "string", "maxLength": 64},
+        "description": {"$ref": "#/$defs/description"},
+        "x": {"$ref": "#/$defs/coordinate"},
+        "y": {"$ref": "#/$defs/coordinate"},
+        "kind": {"$ref": "#/$defs/kind"},
+        "role": {"enum": ["source", "pipeline", "hub", "consume", "extra", "secondary"]},
+        "api_group": {"$ref": "#/$defs/id"}
+      }
+    },
+    "route": {
+      "type": "object", "additionalProperties": false,
+      "required": ["from", "to", "kind", "color"],
+      "properties": {
+        "from": {"$ref": "#/$defs/id"}, "to": {"$ref": "#/$defs/id"},
+        "kind": {"$ref": "#/$defs/kind"}, "color": {"enum": ["gold", "jade", "coral"]},
+        "label": {"type": "string", "minLength": 1, "maxLength": 48},
+        "api_group": {"$ref": "#/$defs/id"},
+        "curve": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"$ref": "#/$defs/coordinate"}},
+        "label_position": {"$ref": "#/$defs/point"}
+      }
+    },
+    "map": {"type": "object", "additionalProperties": false, "required": ["title", "stations", "routes"], "properties": {"title": {"$ref": "#/$defs/entryTitle"}, "stations": {"type": "array", "minItems": 2, "maxItems": 24, "items": {"$ref": "#/$defs/station"}}, "routes": {"type": "array", "minItems": 1, "maxItems": 48, "items": {"$ref": "#/$defs/route"}}}},
+    "entry": {"type": "object", "additionalProperties": false, "required": ["title", "description"], "properties": {"title": {"$ref": "#/$defs/entryTitle"}, "description": {"$ref": "#/$defs/description"}}},
+    "entries": {"type": "array", "maxItems": 32, "items": {"$ref": "#/$defs/entry"}}
+  }
+}

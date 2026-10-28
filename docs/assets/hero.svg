@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 220" role="img" aria-labelledby="t d">
+  <title id="t">apitu hero</title>
+  <desc id="d">Original schematic of a conversation producing JSON and apitu emitting a local interactive HTML diagram. Not a screenshot.</desc>
+  <rect width="960" height="220" rx="24" fill="#0f1b1a"/>
+  <rect x="36" y="36" width="260" height="148" rx="16" fill="#16302c" stroke="#3d8f7a"/>
+  <text x="166" y="92" text-anchor="middle" fill="#d7efe8" font-family="ui-sans-serif,system-ui,sans-serif" font-size="18">session</text>
+  <text x="166" y="124" text-anchor="middle" fill="#8fbfb2" font-family="ui-sans-serif,system-ui,sans-serif" font-size="14">typed JSON</text>
+  <path d="M312 110h88" stroke="#c9a227" stroke-width="3"/>
+  <polygon points="400,110 388,104 388,116" fill="#c9a227"/>
+  <rect x="416" y="36" width="228" height="148" rx="16" fill="#1b2438" stroke="#7a6bb8"/>
+  <text x="530" y="92" text-anchor="middle" fill="#e8e4f7" font-family="ui-sans-serif,system-ui,sans-serif" font-size="18">apitu</text>
+  <text x="530" y="124" text-anchor="middle" fill="#b3a8d9" font-family="ui-sans-serif,system-ui,sans-serif" font-size="14">finalize / preview</text>
+  <path d="M660 110h88" stroke="#3d8f7a" stroke-width="3"/>
+  <polygon points="748,110 736,104 736,116" fill="#3d8f7a"/>
+  <rect x="764" y="36" width="160" height="148" rx="16" fill="#16302c" stroke="#3d8f7a"/>
+  <text x="844" y="92" text-anchor="middle" fill="#d7efe8" font-family="ui-sans-serif,system-ui,sans-serif" font-size="18">HTML</text>
+  <text x="844" y="124" text-anchor="middle" fill="#8fbfb2" font-family="ui-sans-serif,system-ui,sans-serif" font-size="14">local file</text>
+</svg>

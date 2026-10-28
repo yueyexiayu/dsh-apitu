@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "title": "apitu 本地插件",
+    "eyebrow": "APITU · DSH LOCAL PLUGIN · SOURCE CHECK",
+    "description": "apitu 不是远程出图服务，也不会自动让运行中的 Host 重载源码。真实链路是会话请求 → danger-full-access 策略门禁 → 会话任务管理 → 本地 Node CLI → roadmap 校验、排版与模板 → 原子 HTML → 成功产物登记。工具、侧栏与原生打开是独立入口；源码修改后的运行态验收仍需重启 Host。此例按包内 lib/index.js、lib/core.js 与 roadmap renderer 的源码核对，不声称当前 GUI 已加载这些改动。",
+    "checked_at": "2026-10-08",
+    "runtime_flags": ["执行策略：danger-full-access", "写入：APITU_NO_CLOBBER=1", "Host 最新源码加载：未验收"]
+  },
+  "flow": {
+    "title": "会话请求 → 本地渲染 → 可打开的 HTML",
+    "stations": [
+      {"id": "request", "label": "会话请求", "subtitle": "tool / sidebar", "description": "lib/index.js：工具 execute 与 POST /api/apitu 都交给同一个会话任务管理器。", "kind": "manual", "role": "source"},
+      {"id": "policy", "label": "策略门禁", "subtitle": "danger-full-access", "description": "lib/index.js assertExecutionPolicy 拒绝 sandboxed 执行，不偷偷通过子进程绕过策略。", "kind": "auto", "role": "pipeline"},
+      {"id": "task", "label": "任务管理", "subtitle": "session-owned jobs", "description": "任务绑定会话，执行结果、状态与 HTML artifacts 由任务管理器登记。", "kind": "auto", "role": "hub"},
+      {"id": "cli", "label": "本地 CLI", "subtitle": "bundled apitu core", "description": "lib/core.js 启动打包的 Node CLI，设置禁止覆盖环境；roadmap 是独立第六类型，不替换原五类。", "kind": "auto", "role": "pipeline"},
+      {"id": "compile", "label": "roadmap 编译", "subtitle": "schema / layout / template", "description": "roadmap-compiler 校验结构、引用、节点文字与线路标签位置；使用包内 api-sheji 风格模板，自动产生 F/A 编号。", "kind": "auto", "role": "pipeline"},
+      {"id": "output", "label": "原子 HTML", "subtitle": "shared atomic publication", "description": "roadmap renderer 复用 shared/cli.mjs writeStandaloneHtml 的同一原子发布实现。禁止覆盖已有输出，输入文件不能成为输出。", "kind": "auto", "role": "pipeline"},
+      {"id": "artifact", "label": "产物登记", "subtitle": "successful HTML artifact", "description": "lib/index.js：普通任务只有 completed 且 result.ok 才能打开；preview 还要求有已验证产物，不把 checking/needs-fix 冒充成功。", "kind": "auto", "role": "consume"},
+      {"id": "open", "label": "原生打开", "subtitle": "POST action=open", "description": "openArtifact 检查绝对 HTML 路径与普通文件后调用 macOS /usr/bin/open；打开不是代码部署。", "kind": "manual", "role": "extra"},
+      {"id": "reload", "label": "Host 重载验收", "subtitle": "尚无自动部署链路", "description": "源码落盘不代表运行中的 Host 已加载；打开 HTML 不会触发 Host 重启。真实加载与桌面侧栏仍须由运行态验收确认。", "kind": "gap", "role": "secondary"}
+    ],
+    "routes": [
+      {"from": "request", "to": "policy", "kind": "manual", "color": "jade", "label": "显式运行"},
+      {"from": "policy", "to": "task", "kind": "auto", "color": "gold", "label": "策略通过"},
+      {"from": "task", "to": "cli", "kind": "auto", "color": "gold"},
+      {"from": "cli", "to": "compile", "kind": "auto", "color": "jade", "label": "typed JSON"},
+      {"from": "compile", "to": "output", "kind": "auto", "color": "jade", "label": "自包含 HTML"},
+      {"from": "output", "to": "artifact", "kind": "auto", "color": "coral"},
+      {"from": "artifact", "to": "open", "kind": "manual", "color": "jade", "label": "手动打开"},
+      {"from": "open", "to": "reload", "kind": "gap", "color": "coral", "label": "不会自动重载"}
+    ]
+  },
+  "api": {
+    "title": "同一会话边界 → GET / POST 动作与工具执行",
+    "stations": [
+      {"id": "session", "label": "绑定会话", "subtitle": "trustedSession / exec.agent", "description": "HTTP 使用 trustedSession；工具使用 exec.agent.session。调用不借用其他会话的任务。", "kind": "auto", "role": "source"},
+      {"id": "list", "label": "GET 任务列表", "subtitle": "/api/apitu?sessionId=…", "description": "createApi GET 无 jobId：返回当前会话的 jobs、policy、commands 与插件版本。", "kind": "auto", "api_group": "query", "role": "pipeline"},
+      {"id": "status", "label": "GET 任务状态", "subtitle": "/api/apitu?jobId=…", "description": "createApi GET 带 jobId：只读取该会话拥有的任务；不存在返回 404，失败结果不冒充 ok。", "kind": "auto", "api_group": "query", "role": "pipeline"},
+      {"id": "run", "label": "POST run / demo", "subtitle": "/api/apitu", "description": "createApi POST action=run/demo：执行策略门禁后 manager.start，返回 202 与 jobId。", "kind": "auto", "api_group": "execute", "role": "hub"},
+      {"id": "stop", "label": "POST stop-preview", "subtitle": "/api/apitu", "description": "createApi POST action=stop-preview：停止当前会话拥有的预览任务；返回真实进程与构建状态。", "kind": "auto", "api_group": "execute", "role": "pipeline"},
+      {"id": "open", "label": "POST open", "subtitle": "/api/apitu", "description": "createApi POST action=open：成功 HTML 或已验证 preview artifact 才能打开；index 必须为合法整数。", "kind": "auto", "api_group": "artifact", "role": "consume"},
+      {"id": "tool", "label": "apitu 工具 execute", "subtitle": "guide / read / run", "description": "createTools：guide/read 读取打包指引与资源；run 通过策略门禁与同一任务管理器执行。", "kind": "auto", "api_group": "execute", "role": "extra"}
+    ],
+    "routes": [
+      {"from": "session", "to": "list", "kind": "auto", "color": "gold", "api_group": "query"},
+      {"from": "session", "to": "status", "kind": "auto", "color": "gold", "api_group": "query"},
+      {"from": "session", "to": "run", "kind": "auto", "color": "jade", "api_group": "execute"},
+      {"from": "session", "to": "stop", "kind": "auto", "color": "jade", "api_group": "execute"},
+      {"from": "session", "to": "open", "kind": "auto", "color": "coral", "api_group": "artifact"},
+      {"from": "session", "to": "tool", "kind": "auto", "color": "jade", "api_group": "execute"}
+    ]
+  },
+  "rules": [
+    {"title": "不得绕过 sandbox", "description": "run 明确要求 danger-full-access；拒绝时不换路径、不偷偷改用无沙箱调用。"},
+    {"title": "保留原输出", "description": "新 HTML 必须选择新路径；shared atomic publisher 绑定文件身份与内容，不覆盖已有产物或输入。"},
+    {"title": "roadmap 独立门禁", "description": "F/A 地图使用 roadmap-v1 验收；不把原五类 viewer 控件数量当作 roadmap 成功条件。"},
+    {"title": "预览不等于通过", "description": "running 只表示进程运行；checking、needs-fix、unavailable 与 verified 分开。HTML 需匹配已验证的字节数与 SHA-256。"}
+  ],
+  "consumption": [
+    {"title": "会话工具", "description": "先 guide，再 read 精确 schema/example，最后 run finalize 到新的 HTML 路径。"},
+    {"title": "本地 HTML 阅读", "description": "文件自包含：流动路线、分类筛选、F/A 节点提示、缩放、拖动与复位无需网络或已安装 skill。"}
+  ],
+  "lifecycle": [
+    {"title": "预览进程", "description": "running → stopping → stopped/failed；活跃与终止记录有明确上限和保留时长。"},
+    {"title": "预览构建", "description": "checking → verified 或 needs-fix；状态接口或产物完整性异常为 unavailable，不默默显示成功。"}
+  ],
+  "pages_commands": [
+    {"title": "roadmap 结构与排版检查", "command": "apitu validate roadmap input.json --json", "description": "拒绝未知字段、重复引用、API manual/gap、非有限坐标、文字出界与碰撞。"},
+    {"title": "正式发布命令", "command": "apitu finalize roadmap input.json NEW_OUTPUT.html --json", "description": "先独立静态与浏览器门禁，再原子发布 HTML 与交付回执。"},
+    {"title": "侧栏", "description": "侧栏消费会话任务 API；当前例子不宣称最新桌面 bundle 与 Host 已完成运行态加载。"}
+  ],
+  "boundaries": [
+    "核对来源是本地插件源码和打包 roadmap renderer，不是当前 Host 进程的部署证明。",
+    "style 与交互脚本按 api-sheji 原模板保留；仅 FLOW/API 数据替换，所有 authored 字符串先转义以保护节点提示的 innerHTML。",
+    "默认自动排布并避开无关站点；长标签或密集图超出固定画布容量时明确报错，需缩短文字或减小单图范围。",
+    "先核对策略、会话与新输出路径，再查 schema/layout 和 roadmap-v1 门禁，最后才检查 Host 加载与桌面交互。"
+  ]
+}
