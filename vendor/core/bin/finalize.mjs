@@ -640,7 +640,7 @@ export async function runFinalize(options = {}) {
   type,
   input,
   output,
-  quality = 'showcase',
+  quality: requestedQuality = 'showcase',
   repoRoot,
   candidateSha256,
   outDir,
@@ -654,8 +654,8 @@ export async function runFinalize(options = {}) {
   } = options;
   signal?.throwIfAborted();
   if (!cliPath || !type || !input || !output) throw new Error('finalize requires cliPath, type, input, and output.');
-  if (type === 'roadmap') quality = 'roadmap-v1';
-  else if (quality === 'roadmap-v1') throw new Error('roadmap-v1 acceptance is only valid for roadmap diagrams.');
+  const quality = type === 'roadmap' ? 'roadmap-v1' : requestedQuality;
+  if (type !== 'roadmap' && quality === 'roadmap-v1') throw new Error('roadmap-v1 acceptance is only valid for roadmap diagrams.');
   const started = process.hrtime.bigint();
   const startedAt = new Date().toISOString();
   const resolvedInput = path.resolve(input);

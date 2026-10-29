@@ -1,6 +1,6 @@
 {
   "name": "apitu",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "private": true,
   "type": "module",
   "description": "本地交互式架构与流程图插件，内置完整图表核心。",

@@ -38,6 +38,28 @@ for (const key of ['createBrowser', 'resolveChrome', 'runBrowserCheck']) test(`f
   await assert.rejects(runFinalize({ [key]: () => { throw new Error('must never call public acquisition hook'); } }), { code: 'UNSUPPORTED_BROWSER_ADAPTER_OPTION' });
 });
 
+test('roadmap finalize forces roadmap-v1 without assigning a const quality', async () => {
+  await assert.rejects(runFinalize({
+    cliPath: '/tmp/apitu-cli.mjs',
+    type: 'architecture',
+    input: '/tmp/apitu-missing.json',
+    output: '/tmp/apitu-missing.html',
+    quality: 'roadmap-v1',
+  }), /only valid for roadmap/);
+  let failed;
+  try {
+    await runFinalize({
+      cliPath: '/tmp/apitu-cli.mjs',
+      type: 'roadmap',
+      input: '/tmp/apitu-missing-candidate.json',
+      output: path.join(os.tmpdir(), `apitu-roadmap-quality-${Date.now()}.html`),
+    });
+  } catch (error) {
+    failed = error;
+  }
+  assert.notEqual(failed?.message, 'Assignment to constant variable.');
+});
+
 test('inherited/nonenumerable acquisition keys reject without reading getters; null-prototype DTOs remain legal', async () => {
   for (const key of ['spawnImpl', 'getuid', 'browserFactory', 'resolveChrome', 'createBrowser', 'runBrowserCheck']) {
     let calls = 0;
