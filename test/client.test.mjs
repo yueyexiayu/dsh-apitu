@@ -67,6 +67,15 @@ test("registers a unique right-sidebar kind, both keyed slots and declared servi
   c.unmount();
 });
 
+test("prefills the trusted session cwd from Host without posting", async () => {
+  const c = mount({ ok: true, cwd: "/tmp/session-work", jobs: [] }); await c.flush();
+  assert.equal(c.all((node) => node.props["aria-label"] === "工作目录")[0].props.value, "/tmp/session-work");
+  assert.equal(c.calls.filter((x) => x.body).length, 0);
+  await c.click("生成示例");
+  assert.deepEqual(c.calls.find((x) => x.body).body, { sessionId: "session", action: "demo", cwd: "/tmp/session-work" });
+  c.unmount();
+});
+
 test("demo refuses missing or relative cwd and submits an absolute cwd", async () => {
   const c = mount(); await c.flush();
   await c.click("生成示例");

@@ -4,8 +4,8 @@
   <p><strong>把当前会话里的想法和代码证据做成可交互的本地 HTML 图。</strong></p>
   <p>DeepSeek Harness 桌面插件：中文右侧栏 + 工具 <code>apitu</code>。不另配模型账号或 API Key。</p>
   <p><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
-  <p><a href="package.json">v1.2.1</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
-  <p><a href="#安装与使用">安装与使用</a> · <a href="#完整能力与边界">能力与边界</a> · <a href="#执行策略121">执行策略</a> · <a href="#运行环境">运行环境</a> · <a href="#开发验证">验证</a></p>
+  <p><a href="package.json">v1.2.2</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
+  <p><a href="#安装与使用">安装与使用</a> · <a href="#完整能力与边界">能力与边界</a> · <a href="#执行策略122">执行策略</a> · <a href="#运行环境">运行环境</a> · <a href="#开发验证">验证</a></p>
 </div>
 
 本地 DSH 插件：把当前会话中的想法、需求或代码证据制作成交互式 HTML 图。提供中文右侧栏与原生 `apitu` 工具；不需要另配模型账号或 API Key。
@@ -14,7 +14,7 @@
 
 ## 安装与使用
 
-当前执行策略接入版为插件 `1.2.1`，vendored core 标识 `3.1.0`，带本地缺陷修复，不冒充上游新发行版。本机按 **profile bundle** 加载（`package.json` 的 `dependencies` + `dsh.profile.bundles`），包内 patch 的 `name` 为 `apitu`。修改后请 **⌘Q 完全退出 DeepSeek Harness 后重新打开**；文件已写入不能单独证明桌面加载了最新版。重启后用工具 `guide` 或当前会话的侧栏 GET 响应确认 `version: "1.2.1"`，再验收任务列表、会话策略和预览；旧进程的 `1.0.0` 响应不能证明新代码已生效。
+当前执行策略接入版为插件 `1.2.2`，vendored core 标识 `3.1.0`，带本地缺陷修复，不冒充上游新发行版。本机按 **profile bundle** 加载（`package.json` 的 `dependencies` + `dsh.profile.bundles`），包内 patch 的 `name` 为 `apitu`。修改后请 **⌘Q 完全退出 DeepSeek Harness 后重新打开**；文件已写入不能单独证明桌面加载了最新版。重启后用工具 `guide` 或当前会话的侧栏 GET 响应确认 `version: "1.2.2"`，再验收任务列表、会话策略和预览；旧进程的 `1.2.1` 响应不能证明新代码已生效。
 
 ```sh
 export DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
@@ -65,10 +65,10 @@ git clone https://github.com/yueyexiayu/dsh-apitu.git "$DSH_HOME/plugins/apitu"
 - 写命令要求显式指定**新**产物路径，提交阶段通过原子 no-clobber 发布保护已有文件，包括 Host 预检后并发出现的文件；显式 `--receipt` 和 `--out-dir` 也必须是新路径。`migrate --output` 仅设置 JSON 元数据。
 - 失败或视觉修复后重跑完整 `finalize`，保留旧产物并使用新 revision 的 HTML，例如 `.apitu/new-run/repair-2/diagram.html`，有 `meta.output` 时同步调整，并换新显式 receipt/evidence 路径。**只改变 `--out-dir` 不够**；即使候选内容没变，只要旧 HTML 已产生也不能复用。不要删除旧证据或绕过策略改用裸 CLI。预览只允许继续更新当前进程自己已发布且未被第三方更改的产物。
 - CLI 子进程不能继承受限 DSH 文件沙箱，因此只在 `danger-full-access` 策略下执行；未知、只读和 workspace-write 模式明确拒绝。读取插件内文档不受此限制。
-- cwd 必须来自真实会话目录或用户显式填写，不用 Host 的 cwd 猜测。仅支持本地文件系统。
-- 普通任务最多运行 180 秒，输出上限 2 MiB；超限/取消明确失败。持续 preview 就绪后不受普通任务期限限制，但同时最多 8 个活动预览；结束预览最多保留 32 条、30 分钟，超过容量/期限会回收内存记录。对话与侧栏共用最近任务注册表，终态任务最多约 30 条/24 小时，活动任务不会因历史上限被提前丢失；重启不删除磁盘产物。
+- cwd 必须来自真实会话目录或用户显式填写，不用 Host 进程目录猜测。侧栏 GET 会返回当前会话 cwd 供预填，用户仍可改。仅支持本地文件系统。
+- 普通任务最多运行 180 秒，输出上限 2 MiB；超限/取消明确失败。持续 preview 就绪后不受普通任务期限限制，但同时最多 8 个活动预览；结束预览最多保留 32 条、30 分钟，超过容量/期限会回收内存记录。对话与侧栏共用最近任务注册表；同一会话同时只能有一个 running 任务，不同会话互不阻塞。终态任务最多约 30 条/24 小时，活动任务不会因历史上限被提前丢失；重启不删除磁盘产物。Host 卸载通过 `ctx.effect` 停止预览，preview 停止信号发给进程组。
 
-## 执行策略（1.2.1）
+## 执行策略（1.2.2）
 
 所有自动 browser-check/visual-check/finalize 使用 owned、anonymous、true headless 的 `web-regression` 批次；不借 Chrome 扩展、用户登录 profile 或原生窗口。backend 是 CDP pipe。Host 把真实 Session ID、job/task batch 与 operation cwd 传给 CLI；直接 CLI 使用自己的进程 session/batch，不能误报为用户会话。receipt 记录 execution request、真实 scope/backend/mode/ownership/identity、固定磁盘 identity 与运行中 `Browser.getVersion`，无匿名或 GUI fallback。
 

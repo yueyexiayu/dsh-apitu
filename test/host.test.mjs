@@ -24,7 +24,7 @@ async function finished(api, id) {
 
 test('Host declares services and registers a complete tool and buffered route', () => {
   let tool, route, disposer;
-  apply({ ...ctx, tools: { register: value => { tool = value; } }, connection: { fetch: { register: value => { route = value; } } }, on: (event, callback) => { assert.equal(event, 'dispose'); disposer = callback; } });
+  apply({ ...ctx, tools: { register: value => { tool = value; } }, connection: { fetch: { register: value => { route = value; } } }, effect: (fn, label) => { assert.equal(label, 'apitu.lifecycle'); const cleanup = fn(); if (typeof cleanup === 'function') disposer = cleanup; } });
   assert.deepEqual(inject, ['tools', 'connection', 'sandboxPolicy', 'sessions']);
   assert.equal(tool.name, 'apitu');
   assert.ok(tool.output.schema && tool.output.render);
@@ -167,6 +167,7 @@ test('API publishes success results and opens only its registered HTML', async (
   assert.equal(opened, path.join(job.cwd, 'result.html'));
   const list = await (await api.fetch(request())).json();
   assert.equal(list.jobs[0].id, jobId);
+  assert.equal(list.cwd, temp);
 });
 
 test('API failed subprocess and thrown exception both produce failed jobs', async () => {
@@ -210,4 +211,27 @@ test('API disposal aborts a running operation', async () => {
   api.dispose();
   assert.equal(seen.aborted, true);
   assert.equal((await finished(api, jobId)).status, 'failed');
+});
+
+test('a running job does not block a different trusted session', async () => {
+  const other = { id: 'other-session', header: { cwd: temp } };
+  const dual = { sandboxPolicy: ctx.sandboxPolicy, sessions: { get: id => id === session.id ? session : id === other.id ? other : undefined } };
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const api = createApi(dual, { runner: async () => { await gate; return { ok: true, exitCode: 0, stdout: '', stderr: '', artifacts: [] }; } });
+  const first = await (await api.fetch(request({ action: 'run', args: ['help'], cwd: temp }))).json();
+  const second = await (await api.fetch(new Request('http://local/api/apitu', { method: 'POST', body: JSON.stringify({ action: 'run', args: ['help'], cwd: temp, sessionId: other.id }) }))).json();
+  assert.equal(second.ok, true, second.error);
+  assert.ok(second.jobId);
+  assert.notEqual(second.jobId, first.jobId);
+  release();
+  assert.equal((await finished(api, first.jobId)).status, 'completed');
+  let otherDone;
+  const deadline = Date.now() + 10000;
+  while (Date.now() < deadline) {
+    otherDone = await (await api.fetch(new Request(`http://local/api/apitu?sessionId=${other.id}&jobId=${second.jobId}`))).json();
+    if (otherDone.status !== 'running') break;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  assert.equal(otherDone.status, 'completed');
 });
