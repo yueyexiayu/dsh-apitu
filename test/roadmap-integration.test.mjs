@@ -49,11 +49,15 @@ test('roadmap guide, packaged references, doctor and CLI capability routing are 
   assert.match(rejected.stderr, /compare.*architecture|architecture.*compare/i);
 });
 
-test('Host examples regenerates six types in a fresh isolated copy, leaving bundled files untouched', async () => {
+test('Host examples publishes six types and removes its disposable runtime copy', async () => {
   const before = fs.readdirSync(path.join(SKILL_ROOT, 'examples'), { recursive: true }).filter(name => fs.statSync(path.join(SKILL_ROOT, 'examples', name)).isFile()).map(name => [name, fs.readFileSync(path.join(SKILL_ROOT, 'examples', name)).toString('base64')]);
   const result = await runCore({ args: ['examples'], cwd: scratch, node: process.execPath });
   assert.equal(result.ok, true, result.stderr);
   assert.equal(result.artifacts.length, 6);
+  assert.ok(result.artifacts.every(file => fs.statSync(file).isFile()));
+  const outputDirectories = fs.readdirSync(path.join(scratch, '.apitu')).filter(name => name.startsWith('examples-'));
+  assert.equal(outputDirectories.length, 1);
+  assert.equal(fs.existsSync(path.join(scratch, '.apitu', outputDirectories[0], 'core')), false, 'the 6.6 MB runtime copy must be removed');
   const roadmap = result.artifacts.find(file => path.basename(file) === 'apitu-plugin.roadmap.html');
   assert.ok(roadmap);
   assert.equal(checkRoadmapHtml(fs.readFileSync(roadmap, 'utf8')).ok, true);

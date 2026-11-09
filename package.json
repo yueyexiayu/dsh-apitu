@@ -1,10 +1,13 @@
 {
   "name": "apitu",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "private": true,
   "type": "module",
   "description": "本地交互式架构与流程图插件，内置完整图表核心。",
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/yueyexiayu/dsh-apitu.git"

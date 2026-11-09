@@ -11,7 +11,7 @@ function mount(initial = { ok: true, version: "1", coreVersion: "2", jobs: [] },
   let handler = async (_url, options) => options ? { ok: true, jobId: "new-job" } : initial;
   const React = {
     createElement(type, props, ...children) { return { type, props: props || {}, children: children.flat(Infinity).filter((x) => x != null) }; },
-    useState(seed) { const id = cursor++; if (!(id in hooks)) hooks[id] = seed; return [hooks[id], (value) => { hooks[id] = value; }]; },
+    useState(seed) { const id = cursor++; if (!(id in hooks)) hooks[id] = seed; return [hooks[id], (value) => { hooks[id] = typeof value === "function" ? value(hooks[id]) : value; }]; },
     useRef(seed) { const id = cursor++; return hooks[id] ||= { current: seed }; },
     useEffect(fn) { const id = cursor++; if (!(id in hooks)) { hooks[id] = true; effects.push(fn); } },
   };
@@ -50,6 +50,14 @@ function mount(initial = { ok: true, version: "1", coreVersion: "2", jobs: [] },
     async flush() { await settle(); render(); },
     input(label, value) { const field = all((node) => node.props["aria-label"] === label)[0]; assert.ok(field, label); field.props.onChange({ target: { value } }); render(); },
     async click(label) { const button = all((node) => node.type === "button" && text(node) === label)[0]; assert.ok(button, label); await button.props.onClick(); await settle(); render(); },
+    async toggleDetails(jobId) {
+      const article = all((node) => node.type === "article").find((node) => text(node).includes(jobId));
+      assert.ok(article, jobId);
+      const details = all((node) => node.type === "details", article).find((node) => text(node).includes("输出与验证结果"));
+      assert.ok(details, jobId);
+      await details.props.onToggle({ currentTarget: { open: true } });
+      await settle(); render();
+    },
     async poll() { const fn = timers.values().next().value; assert.ok(fn); timers.clear(); await fn(); render(); },
     unmount() { cleanup.forEach((fn) => fn?.()); },
   };
@@ -135,14 +143,31 @@ test("HTTP non-JSON failures and invalid list responses are not empty success st
   c.unmount();
 });
 
-test("only a successful job with HTML artifacts exposes open; output and failures remain visible", async () => {
-  const c = mount({ ok: true, jobs: [
-    { id: "bad", status: "failed", error: "validation failed", result: { ok: false, exitCode: 1, stderr: "bad schema" } },
-    { id: "help", status: "completed", result: { ok: true, stdout: "help output", artifacts: [] } },
-    { id: "ok", status: "completed", result: { ok: true, stdout: "validated", artifacts: ["/tmp/a.html"] } },
-  ] }); await c.flush();
+test("list summaries defer full output and successful artifacts remain openable", async () => {
+  const initial = { ok: true, jobs: [
+    { id: "bad", status: "failed", error: "validation failed\nbad schema", result: { ok: false, exitCode: 1, artifacts: [], output: { stderrBytes: 10 }, hasDetails: true } },
+    { id: "help", status: "completed", result: { ok: true, artifacts: [], output: { stdoutBytes: 11 }, hasDetails: true } },
+    { id: "ok", status: "completed", result: { ok: true, artifacts: ["/tmp/a.html"], output: { stdoutBytes: 9 }, hasDetails: true } },
+  ] };
+  const c = mount(initial); await c.flush();
   assert.equal(c.all((node) => node.type === "button" && c.text(node) === "打开 HTML").length, 1);
-  assert.match(c.text(), /validation failed/); assert.match(c.text(), /bad schema/); assert.match(c.text(), /help output/);
+  assert.match(c.text(), /validation failed/); assert.match(c.text(), /bad schema/);
+  assert.doesNotMatch(c.text(), /help output/); assert.match(c.text(), /展开后加载完整输出/);
+  c.setHandler(async (url, options) => {
+    if (!options && url.includes("jobId=help")) return { ok: true, id: "help", status: "completed", result: { ok: true, stdout: "help output", artifacts: [] } };
+    if (!options && url.includes("jobId=bad")) return new Response(JSON.stringify({ ok: false, id: "bad", status: "failed", result: { ok: false, stderr: "full bad schema diagnostics", artifacts: [] } }), { status: 200, headers: { "content-type": "application/json" } });
+    return initial;
+  });
+  await c.toggleDetails("help");
+  assert.match(c.text(), /help output/);
+  await c.toggleDetails("bad");
+  assert.match(c.text(), /full bad schema diagnostics/);
+  assert.ok(c.calls.some((call) => !call.body && call.url.includes("jobId=help")));
+  initial.jobs[1].status = "failed"; initial.jobs[1].error = "updated diagnostics";
+  await c.poll();
+  assert.match(c.text(), /状态已更新，重新加载完整输出/);
+  await c.click("状态已更新，重新加载完整输出");
+  assert.match(c.text(), /help output/);
   await c.click("打开 HTML");
   assert.deepEqual(c.calls.find((x) => x.body).body, { sessionId: "session", action: "open", jobId: "ok" });
   c.unmount();
@@ -188,10 +213,10 @@ test("running preview exposes an explicit link and stops through the Host API wi
 test("stopped and failed preview states remain visible without stop controls", async () => {
   const c = mount({ ok: true, jobs: [
     { id: "stopped", status: "completed", result: { ok: true, preview: { status: "stopped", url: "http://127.0.0.1:4200/" } } },
-    { id: "failed", status: "completed", result: { ok: true, preview: { status: "failed", error: "Preview process exited", stderr: "EADDRINUSE" } } },
+    { id: "failed", status: "completed", result: { ok: false, hasDetails: true, preview: { status: "failed", error: "Preview process exited" } } },
   ] }); await c.flush();
   assert.match(c.text(), /实时预览：已停止/); assert.match(c.text(), /实时预览：失败/);
-  assert.match(c.text(), /Preview process exited/); assert.match(c.text(), /EADDRINUSE/);
+  assert.match(c.text(), /Preview process exited/); assert.match(c.text(), /展开后加载完整输出/);
   assert.equal(c.all((node) => node.props.role === "alert").length, 1);
   assert.equal(c.all((node) => node.type === "button" && c.text(node) === "停止预览").length, 0);
   c.unmount();

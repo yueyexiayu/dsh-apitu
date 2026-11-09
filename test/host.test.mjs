@@ -4,7 +4,7 @@ import { chmod, mkdtemp, readFile, writeFile, symlink } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { apply, createApi, createTools, inject } from '../lib/index.js';
-import { SKILL_ROOT, parseArgs, prepareRun, previewStatus, readResource, resolveCwd, runCore, stopPreview } from '../lib/core.js';
+import { SKILL_ROOT, nodeExecutable, parseArgs, prepareRun, previewStatus, readResource, resolveCwd, runCore, stopPreview } from '../lib/core.js';
 
 const temp = await mkdtemp(path.join(os.tmpdir(), 'apitu-host-test-'));
 const session = { id: 'test-session', header: { cwd: temp } };
@@ -54,6 +54,18 @@ test('CLI is denied without a verified full-access policy, never silently bypass
   }
   await assert.rejects(createTools({}, runner).execute({ action: 'run', args: ['help'], cwd: temp }), /cannot verify/);
   assert.equal(called, false);
+});
+
+test('Node selection rejects an explicit pre-18 runtime', async () => {
+  const fakeNode = path.join(temp, 'node-16');
+  await writeFile(fakeNode, '#!/bin/sh\nprintf "v16.20.2\\n"\n');
+  await chmod(fakeNode, 0o700);
+  const previous = process.env.APITU_NODE;
+  process.env.APITU_NODE = fakeNode;
+  try { await assert.rejects(nodeExecutable(), /requires Node\.js >=18.*Node\.js 16/); }
+  finally {
+    if (previous === undefined) delete process.env.APITU_NODE; else process.env.APITU_NODE = previous;
+  }
 });
 
 test('tool resolves cwd from live session and passes the actual session into policy', async () => {
@@ -110,7 +122,11 @@ test('pre-cancel and deadline never masquerade as success', async () => {
 });
 
 test('preview returns a live URL, serves generated HTML, and stops explicitly', async t => {
-  const result = await runCore({ args: ['preview', 'architecture', sample, path.join(temp, 'preview.html')], cwd: temp });
+  const result = await runCore({
+    args: ['preview', 'architecture', sample, path.join(temp, 'preview.html')],
+    cwd: temp,
+    scope: { sessionId: session.id, taskId: 'host-preview-fixture' },
+  });
   assert.ok(result.preview?.id);
   t.after(() => stopPreview(result.preview.id));
   assert.equal(result.ok, result.preview.buildStatus === 'verified');
@@ -150,11 +166,33 @@ test('API bad body/action/job errors are visible', async () => {
   assert.equal((await api.fetch(request(undefined, '?jobId=absent'))).status, 404);
   assert.equal((await api.fetch(request({ action: 'run', args: ['help'], cwd: 'relative' }))).status, 400);
   assert.equal((await api.fetch(request('x'.repeat(65537)))).status, 413);
+  assert.equal((await api.fetch(new Request('http://local/api/apitu?sessionId=absent'))).status, 404);
+  assert.equal((await api.fetch(new Request('http://local/api/apitu'))).status, 400);
+});
+
+test('API separates forbidden, missing-resource and internal failures', async () => {
+  const restricted = { ...ctx, sandboxPolicy: { resolve: () => ({ mode: 'workspace-write' }) } };
+  const denied = await createApi(restricted).fetch(request({ action: 'run', args: ['help'], cwd: temp }));
+  assert.equal(denied.status, 403);
+  assert.match((await denied.json()).error, /danger-full-access/);
+
+  const missingPreview = await createApi(ctx).fetch(request({ action: 'stop-preview', jobId: 'missing-job' }));
+  assert.equal(missingPreview.status, 404);
+
+  const failingOpen = createApi(ctx, {
+    runner: async () => ({ ok: true, exitCode: 0, stdout: 'done', stderr: '', artifacts: [path.join(temp, 'open-failure.html')] }),
+    opener: async () => { throw new Error('native opener failed'); },
+  });
+  const accepted = await (await failingOpen.fetch(request({ action: 'run', args: ['help'], cwd: temp }))).json();
+  await finished(failingOpen, accepted.jobId);
+  const failedOpen = await failingOpen.fetch(request({ action: 'open', jobId: accepted.jobId }));
+  assert.equal(failedOpen.status, 500);
+  assert.match((await failedOpen.json()).error, /native opener failed/);
 });
 
 test('API publishes success results and opens only its registered HTML', async () => {
   let opened, actualInput;
-  const api = createApi(ctx, { runner: async input => { actualInput = input; return { ok: true, exitCode: 0, stdout: 'done', stderr: '', artifacts: [path.join(input.cwd, 'result.html')] }; },  opener: async target => { opened = target; } });
+  const api = createApi(ctx, { runner: async input => { actualInput = input; return { ok: true, exitCode: 0, stdout: 'done', stderr: '', data: { receipt: 'full detail' }, artifacts: [path.join(input.cwd, 'result.html')] }; },  opener: async target => { opened = target; } });
   const response = await api.fetch(request({ action: 'run', args: ['help'], cwd: temp }));
   assert.equal(response.status, 202);
   const { jobId } = await response.json();
@@ -168,6 +206,13 @@ test('API publishes success results and opens only its registered HTML', async (
   const list = await (await api.fetch(request())).json();
   assert.equal(list.jobs[0].id, jobId);
   assert.equal(list.cwd, temp);
+  assert.equal(list.jobs[0].result.stdout, undefined);
+  assert.equal(list.jobs[0].result.data, undefined);
+  assert.deepEqual(list.jobs[0].result.output, { stdoutBytes: 4, stderrBytes: 0, data: true });
+  assert.equal(list.jobs[0].result.hasDetails, true);
+  const detail = await (await api.fetch(request(undefined, `?jobId=${jobId}`))).json();
+  assert.equal(detail.result.stdout, 'done');
+  assert.deepEqual(detail.result.data, { receipt: 'full detail' });
 });
 
 test('API failed subprocess and thrown exception both produce failed jobs', async () => {
@@ -180,6 +225,20 @@ test('API failed subprocess and thrown exception both produce failed jobs', asyn
     assert.match(job.error, /bad candidate|cannot spawn/);
     assert.equal((await api.fetch(request({ action: 'open', jobId }))).status, 409);
   }
+});
+
+test('task-list summaries cap large diagnostics while job detail retains them', async () => {
+  const diagnostics = `head\n${'x'.repeat(9000)}\ntail`;
+  const api = createApi(ctx, { runner: async () => ({ ok: false, exitCode: 2, stdout: '', stderr: diagnostics, artifacts: [] }) });
+  const { jobId } = await (await api.fetch(request({ action: 'run', args: ['help'], cwd: temp }))).json();
+  await finished(api, jobId);
+  const summary = (await (await api.fetch(request())).json()).jobs[0];
+  assert.ok(summary.error.length < diagnostics.length);
+  assert.equal(summary.result.output.stderrBytes, Buffer.byteLength(diagnostics));
+  assert.equal(summary.result.hasDetails, true);
+  const detail = await (await api.fetch(request(undefined, `?jobId=${jobId}`))).json();
+  assert.equal(detail.error, diagnostics);
+  assert.equal(detail.result.stderr, diagnostics);
 });
 
 test('first API read after a preview crash is already failed with its actual exit code', async () => {

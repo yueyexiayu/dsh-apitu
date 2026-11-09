@@ -4,7 +4,7 @@
   <p><strong>把当前会话里的想法和代码证据做成可交互的本地 HTML 图。</strong></p>
   <p>DeepSeek Harness 桌面插件：中文右侧栏 + 工具 <code>apitu</code>。不另配模型账号或 API Key。</p>
   <p><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
-  <p><a href="package.json">v1.2.4</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
+  <p><a href="package.json">v1.2.5</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
   <p><a href="#安装与使用">安装与使用</a> · <a href="#完整能力与边界">能力与边界</a> · <a href="#执行策略123">执行策略</a> · <a href="#运行环境">运行环境</a> · <a href="#开发验证">验证</a></p>
 </div>
 
@@ -14,7 +14,7 @@
 
 ## 安装与使用
 
-当前执行策略接入版为插件 `1.2.4`，vendored core 标识 `3.1.0`，带本地缺陷修复，不冒充上游新发行版。本机按 **profile bundle** 加载（`package.json` 的 `dependencies` + `dsh.profile.bundles`），包内 patch 的 `name` 为 `apitu`。修改后请 **⌘Q 完全退出 DeepSeek Harness 后重新打开**；文件已写入不能单独证明桌面加载了最新版。重启后用工具 `guide` 或当前会话的侧栏 GET 响应确认 `version: "1.2.4"`，再验收任务列表、会话策略和预览；旧进程的 `1.2.2` 响应不能证明新代码已生效。
+当前执行策略接入版为插件 `1.2.5`，vendored core 标识 `3.1.0`，带本地缺陷修复，不冒充上游新发行版。本机按 **profile bundle** 加载（`package.json` 的 `dependencies` + `dsh.profile.bundles`），包内 patch 的 `name` 为 `apitu`。修改后请 **⌘Q 完全退出 DeepSeek Harness 后重新打开**；文件已写入不能单独证明桌面加载了最新版。重启后用工具 `guide` 或当前会话的侧栏 GET 响应确认 `version: "1.2.5"`，再验收任务列表、会话策略和预览；旧进程的 `1.2.2` 响应不能证明新代码已生效。
 
 ```sh
 export DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
@@ -60,15 +60,15 @@ git clone https://github.com/yueyexiayu/dsh-apitu.git "$DSH_HOME/plugins/apitu"
 - Mermaid/自然语言/仓库证据创作由当前 AI 阅读 skill 并转换为 typed JSON，不是独立 Mermaid CLI 解析器或额外模型服务。
 - `inspect` 支持 architecture 和 roadmap；compare 仍仅 architecture，migrate 仍仅 workflow。
 - `preview` 是持续运行的本机实时预览，启动后返回 `preview.id` 和 URL，修改输入 JSON 可热更新。`processStatus` 表示进程是否运行；`buildStatus` 独立表示 `checking`、`verified`、`needs-fix` 或状态不可获取，带 generation、failure 和 lastVerified。启动成功不等于构建通过；侧栏显示“预览运行中”与实际构建状态。
-- 成功构建的 HTML 经大小与 SHA-256 核对后进入任务产物列表；构建失败时保留诊断，不把旧版说成新版成功。用 `preview-status` 查询，或 `stop-preview` 停止；本会话的对话/侧栏预览均可在侧栏停止。停止后已验证的磁盘产物仍可打开。关闭 Host 时清理所有 preview，不替换 DSH GUI。
-- `examples` 会改写自己包中的示例，因此适配层在工作目录 `.apitu/examples-*` 建立独立核心副本执行，保持安装目录不变。`demo` 使用独立的新产物目录。
+- 成功构建的 HTML 经大小与 SHA-256 核对后进入任务产物列表；构建失败时保留诊断，不把旧版说成新版成功。预览记录绑定真实 `sessionId`，对话工具和侧栏都不能读取或停止其他会话的预览。停止后已验证的磁盘产物仍可打开。关闭 Host 时清理所有 preview，不替换 DSH GUI。
+- `examples` 会改写自己包中的示例，因此适配层在系统临时目录建立可丢弃的核心副本，只把六类 HTML 发布到工作目录 `.apitu/examples-*`，结束后删除运行时副本。`demo` 使用独立的新产物目录。
 - 写命令要求显式指定**新**产物路径，提交阶段通过原子 no-clobber 发布保护已有文件，包括 Host 预检后并发出现的文件；显式 `--receipt` 和 `--out-dir` 也必须是新路径。`migrate --output` 仅设置 JSON 元数据。
 - 失败或视觉修复后重跑完整 `finalize`，保留旧产物并使用新 revision 的 HTML，例如 `.apitu/new-run/repair-2/diagram.html`，有 `meta.output` 时同步调整，并换新显式 receipt/evidence 路径。**只改变 `--out-dir` 不够**；即使候选内容没变，只要旧 HTML 已产生也不能复用。不要删除旧证据或绕过策略改用裸 CLI。预览只允许继续更新当前进程自己已发布且未被第三方更改的产物。
 - CLI 子进程不能继承受限 DSH 文件沙箱，因此只在 `danger-full-access` 策略下执行；未知、只读和 workspace-write 模式明确拒绝。读取插件内文档不受此限制。
 - cwd 必须来自真实会话目录或用户显式填写，不用 Host 进程目录猜测。侧栏 GET 会返回当前会话 cwd 供预填，用户仍可改。仅支持本地文件系统。
-- 普通任务最多运行 180 秒，输出上限 2 MiB；超限/取消明确失败。持续 preview 就绪后不受普通任务期限限制，但同时最多 8 个活动预览；结束预览最多保留 32 条、30 分钟，超过容量/期限会回收内存记录。对话与侧栏共用最近任务注册表；同一会话同时只能有一个 running 任务，不同会话互不阻塞。终态任务最多约 30 条/24 小时，活动任务不会因历史上限被提前丢失；重启不删除磁盘产物。Host 卸载通过 `ctx.effect` 停止预览，preview 停止信号发给进程组。
+- 普通任务最多运行 180 秒，输出上限 2 MiB；超限/取消明确失败。侧栏任务列表只返回状态、错误摘要、产物和预览元数据，完整 stdout/stderr/data 在展开任务时按 `jobId` 加载；预览 HTML 仅在文件身份或 generation 变化时重算 SHA-256。持续 preview 就绪后不受普通任务期限限制，但同时最多 8 个活动预览；结束预览最多保留 32 条、30 分钟，超过容量/期限会回收内存记录。对话与侧栏共用最近任务注册表；同一会话同时只能有一个 running 任务，不同会话互不阻塞。终态任务最多约 30 条/24 小时，活动任务不会因历史上限被提前丢失；重启不删除磁盘产物。Host 卸载通过 `ctx.effect` 停止预览，preview 停止信号发给进程组。
 
-## 执行策略（1.2.4）
+## 执行策略（1.2.5）
 
 所有自动 browser-check/visual-check/finalize 使用 owned、anonymous、true headless 的 `web-regression` 批次；不借 Chrome 扩展、用户登录 profile 或原生窗口。backend 是 CDP pipe。Host 把真实 Session ID、job/task batch 与 operation cwd 传给 CLI；直接 CLI 使用自己的进程 session/batch，不能误报为用户会话。receipt 记录 execution request、真实 scope/backend/mode/ownership/identity、固定磁盘 identity 与运行中 `Browser.getVersion`，无匿名或 GUI fallback。
 
@@ -80,7 +80,7 @@ Host 管理的批次把 browser/visual receipt、finalize full/summary receipt �
 
 ## 运行环境
 
-- Node.js ≥18，本机使用 `/usr/local/bin/node`。可用 `APITU_NODE` 指定绝对路径。
+- Node.js ≥18，本机使用 `/usr/local/bin/node`。可用 `APITU_NODE` 指定绝对路径；启动 CLI 前会执行版本检查，低于 18 明确失败。
 - 普通渲染不需要浏览器。浏览器命令需要本插件本地精确依赖 `playwright-core@1.58.2`，由 `package-lock.json` 固定 npm registry URL/SHA-512 integrity。
 - `finalize`、浏览器/视觉检查只使用该版本对应的专用 headless shell（revision `1208`，真实版本 `145.0.7632.6`），不扫描其他项目、不选择缓存最高 revision、不跨架构借用、不 GUI fallback。Host 源码修改仍须重启 DSH 才用于已加载工具。
 - 兼容性变化：目前只有 macOS arm64 有经过验证的安装校验 manifest，真实验收系统为 macOS 27.0.1；x64/Rosetta、Linux、Windows 明确 `unsupported/unverified`，不再沿用 GUI 自动发现。Darwin major 低于22拒绝，其他 macOS 版本未做真实运行验收，不冒称已验收。

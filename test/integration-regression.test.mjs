@@ -4,7 +4,7 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createApi, createTaskManager, createTools } from '../lib/index.js';
-import { SKILL_ROOT } from '../lib/core.js';
+import { SKILL_ROOT, stopPreview } from '../lib/core.js';
 
 const temp = await mkdtemp(path.join(os.tmpdir(), 'apitu-integration-regression-'));
 function fixture(mode = 'danger-full-access', defaultMode = 'read-only') {
@@ -22,7 +22,7 @@ function fixture(mode = 'danger-full-access', defaultMode = 'read-only') {
     if (query) url.searchParams.set('jobId', query);
     return new Request(url, body === undefined ? undefined : { method: 'POST', body: JSON.stringify(sessionId === null ? body : { ...body, sessionId }) });
   }
-  return { ctx, session, exec, calls, request };
+  return { ctx, session, other, exec, calls, request };
 }
 async function settled(api, f, id) {
   for (let i = 0; i < 100; i++) {
@@ -73,6 +73,29 @@ test('single-job GET preserves pending retrieval success and exposes eventual CL
   await api.dispose();
 });
 
+test('task-list summaries bound large arguments and output until detail is requested', async () => {
+  const f = fixture();
+  const manager = createTaskManager();
+  const hugeArgs = ['help', ...Array.from({ length: 63 }, () => 'x'.repeat(8192))];
+  const stdout = 'result'.repeat(340_000);
+  const tool = createTools(f.ctx, async () => ({ ok: true, exitCode: 0, stdout, stderr: '', artifacts: [] }), manager);
+  const result = await tool.execute({ action: 'run', args: hugeArgs, cwd: temp }, f.exec);
+  const api = createApi(f.ctx, { manager });
+  const list = await (await api.fetch(f.request())).json();
+  const summary = list.jobs[0];
+  assert.equal(summary.id, result.jobId);
+  assert.equal(summary.argsTruncated, true);
+  assert.ok(summary.args.length <= 9);
+  assert.equal(summary.result.stdout, undefined);
+  assert.equal(summary.result.output.stdoutBytes, Buffer.byteLength(stdout));
+  assert.equal(summary.result.hasDetails, true);
+  assert.ok(Buffer.byteLength(JSON.stringify(list)) < 64 * 1024, 'summary polling must stay bounded');
+  const detail = await (await api.fetch(f.request(undefined, result.jobId))).json();
+  assert.deepEqual(detail.args, hugeArgs);
+  assert.equal(detail.result.stdout, stdout);
+  await api.dispose();
+});
+
 test('sidebar and tool use the same trusted live session despite reversed Host defaults', async () => {
   for (const [mode, defaultMode, allowed] of [
     ['danger-full-access', 'read-only', true],
@@ -85,7 +108,7 @@ test('sidebar and tool use the same trusted live session despite reversed Host d
     const execution = tool.execute({ action: 'run', args: ['help'] }, f.exec);
     if (allowed) await execution; else await assert.rejects(execution, /sandbox/);
     const response = await api.fetch(f.request({ action: 'run', args: ['help'], mode: 'danger-full-access', policy: { mode: 'danger-full-access' } }));
-    assert.equal(response.status, allowed ? 202 : 400);
+    assert.equal(response.status, allowed ? 202 : 403);
     if (allowed) await settled(api, f, (await response.json()).jobId);
     assert.equal(runs, allowed ? 2 : 0);
     const state = await (await api.fetch(f.request())).json();
@@ -97,6 +120,28 @@ test('sidebar and tool use the same trusted live session despite reversed Host d
   }
 });
 
+test('conversation preview tools reject reads and stops from another live session', async t => {
+  const f = fixture();
+  const output = path.join(temp, 'session-owned-preview.html');
+  const tool = createTools(f.ctx);
+  const started = await tool.execute({
+    action: 'run',
+    args: ['preview', 'architecture', path.join(SKILL_ROOT, 'examples/web-app.architecture.json'), output],
+  }, f.exec);
+  t.after(() => stopPreview(started.preview.id, { sessionId: f.session.id }).catch(() => {}));
+
+  await assert.rejects(
+    tool.execute({ action: 'preview-status', previewId: started.preview.id }, { agent: { session: f.other } }),
+    /another session/,
+  );
+  await assert.rejects(
+    tool.execute({ action: 'stop-preview', previewId: started.preview.id }, { agent: { session: f.other } }),
+    /another session/,
+  );
+  const status = await tool.execute({ action: 'preview-status', previewId: started.preview.id }, f.exec);
+  assert.equal(status.preview.processStatus, 'running');
+});
+
 test('missing, unknown and unloaded sessions fail closed without executing or listing another scope', async () => {
   const f = fixture();
   let runs = 0;
@@ -104,12 +149,12 @@ test('missing, unknown and unloaded sessions fail closed without executing or li
   for (const id of [null, 'unknown']) {
     for (const body of [undefined, { action: 'run', args: ['help'], cwd: temp, mode: 'danger-full-access' }]) {
       const response = await api.fetch(f.request(body, '', id));
-      assert.equal(response.status, 400);
+      assert.equal(response.status, id === null ? 400 : 404);
       assert.match((await response.json()).error, /sessionId|不存在或未加载/);
     }
   }
   f.ctx.sessions.get = () => undefined;
-  assert.equal((await api.fetch(f.request({ action: 'demo', cwd: temp }))).status, 400);
+  assert.equal((await api.fetch(f.request({ action: 'demo', cwd: temp }))).status, 404);
   assert.equal(runs, 0);
   assert.equal(f.calls.length, 0);
 });
@@ -288,7 +333,9 @@ test('real tool preview exposes invalid JSON, then verified persistent HTML usab
   assert.deepEqual(job.result.artifacts, [output]);
   const verifiedHTML = await readFile(output, 'utf8');
   assert.match(verifiedHTML, /<html/i);
-  await writeFile(output, '<html>tampered</html>');
+  const tampered = Buffer.from(verifiedHTML);
+  tampered[0] = tampered[0] === 0x3c ? 0x20 : 0x3c;
+  await writeFile(output, tampered);
   const unavailable = await createTools(f.ctx).execute({ action: 'preview-status', previewId: result.preview.id }, f.exec);
   assert.equal(unavailable.ok, false);
   assert.equal(unavailable.preview.buildStatus, 'unavailable');

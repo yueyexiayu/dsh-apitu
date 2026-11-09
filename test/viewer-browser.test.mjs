@@ -44,9 +44,16 @@ test('real isolated Chrome viewer: theme, node search/focus, PNG/SVG/WebM downlo
     return result.result?.value;
   }
   async function click(selector) {
-    const box = await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) throw new Error('Missing element'); if (el.disabled || el.hidden) throw new Error('Unavailable control'); el.scrollIntoView({block:'center'}); const r = el.getBoundingClientRect(); if (!r.width || !r.height) throw new Error('Invisible control'); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
+    const deadline = Date.now() + 3000;
+    let box = null;
+    while (!box && Date.now() < deadline) {
+      box = await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el || el.disabled || el.hidden) return null; el.scrollIntoView({block:'center'}); const r = el.getBoundingClientRect(); return r.width && r.height ? {x:r.x+r.width/2,y:r.y+r.height/2} : null; })()`);
+      if (!box) await delay(25);
+    }
+    assert.ok(box, `Control did not become clickable: ${selector}`);
     await send('Input.dispatchMouseEvent', { type: 'mousePressed', button: 'left', clickCount: 1, ...box });
     await send('Input.dispatchMouseEvent', { type: 'mouseReleased', button: 'left', clickCount: 1, ...box });
+    await evaluate('new Promise((resolve) => requestAnimationFrame(() => resolve(true)))');
   }
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await browser.cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: downloads });

@@ -4,7 +4,7 @@
   <p><strong>Turn the current session’s ideas and code evidence into local interactive HTML diagrams.</strong></p>
   <p>DeepSeek Harness desktop plugin: Chinese sidebar + the <code>apitu</code> tool. No extra model account or API key.</p>
   <p><a href="README.md">简体中文</a> · <strong>English</strong></p>
-  <p><a href="package.json">v1.2.4</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
+  <p><a href="package.json">v1.2.5</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
   <p><a href="#install-and-use">Install</a> · <a href="#capabilities-and-limits">Capabilities</a> · <a href="#execution-policy-123">Execution policy</a> · <a href="#runtime">Runtime</a> · <a href="#development-checks">Checks</a></p>
 </div>
 
@@ -14,7 +14,7 @@ Local DSH plugin: turn ideas, requirements, or repository evidence from the curr
 
 ## Install and use
 
-Plugin version `1.2.4`, vendored core id `3.1.0`, with local defect fixes. This is not an upstream core release. Desktop loads it as a **profile bundle** (`dependencies` + `dsh.profile.bundles`); the package patch `name` is `apitu`. After edits, **quit DeepSeek Harness with ⌘Q and reopen**. A written file does not prove the desktop loaded the new code. After restart, confirm `version: "1.2.4"` via the `guide` tool or the sidebar GET for this session, then check tasks, session policy, and preview. A stale `1.2.2` response from an old process is not proof.
+Plugin version `1.2.5`, vendored core id `3.1.0`, with local defect fixes. This is not an upstream core release. Desktop loads it as a **profile bundle** (`dependencies` + `dsh.profile.bundles`); the package patch `name` is `apitu`. After edits, **quit DeepSeek Harness with ⌘Q and reopen**. A written file does not prove the desktop loaded the new code. After restart, confirm `version: "1.2.5"` via the `guide` tool or the sidebar GET for this session, then check tasks, session policy, and preview. A stale `1.2.2` response from an old process is not proof.
 
 ```sh
 export DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
@@ -54,9 +54,11 @@ Write JSON with ordinary DSH file tools, then:
 - Core lives in `vendor/core`; CLI entry is `vendor/core/bin/apitu.mjs`.
 - CLI subprocesses cannot inherit a restricted DSH filesystem sandbox, so execution requires `danger-full-access`. Unknown, read-only, and workspace-write modes fail closed. Reading plugin docs is not blocked.
 - cwd must come from the real session directory or an explicit user path, never the Host process directory. The sidebar GET prefills that session cwd; the user can still change it. Local filesystem only.
+- Preview records are owned by the live session. Conversation and sidebar tools cannot read or stop another session's preview. The `examples` command runs from a disposable system-temporary core, publishes only generated HTML into `.apitu/examples-*`, and removes the runtime copy.
+- Task-list polling returns status, capped diagnostics, artifacts, and preview metadata; complete stdout/stderr/data loads on demand by `jobId`. Preview SHA-256 verification is cached until the artifact identity or generation changes.
 - Ordinary tasks cap at 180 seconds and 2 MiB output. One running job per session; other sessions are not blocked. Host unload stops previews through `ctx.effect`; preview stop signals the process group.
 
-## Execution policy (1.2.4)
+## Execution policy (1.2.5)
 
 Automatic browser-check / visual-check / finalize use owned, anonymous, true-headless `web-regression` batches. They do not borrow the Chrome extension, the user login profile, or a native window. There is no anonymous or GUI fallback.
 
@@ -64,7 +66,7 @@ The shared resolver artifact in `vendor/browser-execution/` is the same source-p
 
 ## Runtime
 
-- Node.js ≥18. This machine uses `/usr/local/bin/node`. `APITU_NODE` may set an absolute path.
+- Node.js ≥18. This machine uses `/usr/local/bin/node`. `APITU_NODE` may set an absolute path; the selected runtime is version-checked before CLI execution.
 - Ordinary rendering does not need a browser. Browser commands need this plugin’s pinned `playwright-core@1.58.2`.
 - `finalize` and browser/visual checks use that version’s dedicated headless shell (revision `1208`, real version `145.0.7632.6`). No GUI fallback.
 - Only macOS arm64 has a verified install manifest. x64/Rosetta, Linux, and Windows are `unsupported/unverified`.
