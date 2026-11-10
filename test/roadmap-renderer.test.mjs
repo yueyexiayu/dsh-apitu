@@ -27,8 +27,8 @@ function tmp(t) {
 const invoke = (args, extra = {}) => spawnSync(process.execPath, [renderer, ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, APITU_NO_CLOBBER: '1', APITU_DIAGNOSTIC_FORMAT: 'json' }, ...extra });
 const expectDiagnostic = (fn, code) => assert.throws(fn, error => error.apituDiagnostics?.some(item => item.code === code));
 
-// These two baseline hashes were independently captured from the original
-// Dataiyi dual-map template on 2026-10-08; tests do not need that skill at runtime.
+// These two baseline hashes pin the bundled template as captured on 2026-10-08.
+// The assertions read only that bundled copy, never an external template.
 test('bundled stylesheet and interaction script preserve exact Dataiyi template bytes', () => {
   const template = fs.readFileSync(ROADMAP_TEMPLATE, 'utf8');
   assert.equal(sha(template.match(/<style>[\s\S]*?<\/style>/)[0]), 'b9c45ea1d285716f8b2e67efa6543e3fcb4f1be3d0d123aab048e49535d1c8ac');
