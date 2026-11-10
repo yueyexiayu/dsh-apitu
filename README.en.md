@@ -4,8 +4,8 @@
   <p><strong>Turn the current session’s ideas and code evidence into local interactive HTML diagrams.</strong></p>
   <p>DeepSeek Harness desktop plugin: Chinese sidebar + the <code>apitu</code> tool. No extra model account or API key.</p>
   <p><a href="README.md">简体中文</a> · <strong>English</strong></p>
-  <p><a href="package.json">v1.2.5</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
-  <p><a href="#install-and-use">Install</a> · <a href="#capabilities-and-limits">Capabilities</a> · <a href="#execution-policy-123">Execution policy</a> · <a href="#runtime">Runtime</a> · <a href="#development-checks">Checks</a></p>
+  <p><a href="package.json">v1.2.6</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
+  <p><a href="#install-and-use">Install</a> · <a href="#capabilities-and-limits">Capabilities</a> · <a href="#execution-policy-126">Execution policy</a> · <a href="#runtime">Runtime</a> · <a href="#development-checks">Checks</a></p>
 </div>
 
 Local DSH plugin: turn ideas, requirements, or repository evidence from the current session into interactive HTML diagrams. It ships a Chinese sidebar and a native `apitu` tool. It does not need a separate model account or API key.
@@ -14,7 +14,7 @@ Local DSH plugin: turn ideas, requirements, or repository evidence from the curr
 
 ## Install and use
 
-Plugin version `1.2.5`, vendored core id `3.1.0`, with local defect fixes. This is not an upstream core release. Desktop loads it as a **profile bundle** (`dependencies` + `dsh.profile.bundles`); the package patch `name` is `apitu`. After edits, **quit DeepSeek Harness with ⌘Q and reopen**. A written file does not prove the desktop loaded the new code. After restart, confirm `version: "1.2.5"` via the `guide` tool or the sidebar GET for this session, then check tasks, session policy, and preview. A stale `1.2.2` response from an old process is not proof.
+Plugin version `1.2.6`, vendored core id `3.1.0`, with local defect fixes. This is not an upstream core release. Desktop loads it as a **profile bundle** (`dependencies` + `dsh.profile.bundles`); the package patch `name` is `apitu`. After edits, **quit DeepSeek Harness with ⌘Q and reopen**. A written file does not prove the desktop loaded the new code. After restart, confirm `version: "1.2.6"` via the `guide` tool or the sidebar GET for this session, then check tasks, session policy, and preview. A stale `1.2.2` response from an old process is not proof.
 
 ```sh
 export DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
@@ -25,7 +25,7 @@ Then add `apitu` to `$DSH_HOME/profiles/desktop/package.json` `dependencies` (`l
 
 1. In chat, ask to draw an architecture or payment flow with apitu. The current session model reads source/requirements, writes schema JSON, then calls the plugin.
 2. Open the **apitu** sidebar tab and set the project’s absolute working directory. The sidebar binds the live session; Host queries the real session and applies the same filesystem policy as the chat tool. It does not take a policy mode from the frontend, and it does not fall back to Host default policy when no session is present. Default type is `roadmap`.
-3. Default `roadmap` is the api-sheji dual-SVG Chinese station map: zoom/pan, F/A numbers, click hints, route filters, and moving packets. **It does not implement the legacy viewer themes, search, presentation, or PNG/SVG/WebM export.** The original five types still keep those viewer features.
+3. Default `roadmap` is the Dataiyi-style dual-SVG Chinese station map: zoom/pan, F/A numbers, click hints, route filters, and moving packets. **It does not implement the legacy viewer themes, search, presentation, or PNG/SVG/WebM export.** The original five types still keep those viewer features.
 
 ### Chat tool
 
@@ -58,7 +58,7 @@ Write JSON with ordinary DSH file tools, then:
 - Task-list polling returns status, capped diagnostics, artifacts, and preview metadata; complete stdout/stderr/data loads on demand by `jobId`. Preview SHA-256 verification is cached until the artifact identity or generation changes.
 - Ordinary tasks cap at 180 seconds and 2 MiB output. One running job per session; other sessions are not blocked. Host unload stops previews through `ctx.effect`; preview stop signals the process group.
 
-## Execution policy (1.2.5)
+## Execution policy (1.2.6)
 
 Automatic browser-check / visual-check / finalize use owned, anonymous, true-headless `web-regression` batches. They do not borrow the Chrome extension, the user login profile, or a native window. There is no anonymous or GUI fallback.
 

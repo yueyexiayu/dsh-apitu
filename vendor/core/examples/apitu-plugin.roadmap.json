@@ -14,7 +14,7 @@
       {"id": "policy", "label": "策略门禁", "subtitle": "danger-full-access", "description": "lib/index.js assertExecutionPolicy 拒绝 sandboxed 执行，不偷偷通过子进程绕过策略。", "kind": "auto", "role": "pipeline"},
       {"id": "task", "label": "任务管理", "subtitle": "session-owned jobs", "description": "任务绑定会话，执行结果、状态与 HTML artifacts 由任务管理器登记。", "kind": "auto", "role": "hub"},
       {"id": "cli", "label": "本地 CLI", "subtitle": "bundled apitu core", "description": "lib/core.js 启动打包的 Node CLI，设置禁止覆盖环境；roadmap 是独立第六类型，不替换原五类。", "kind": "auto", "role": "pipeline"},
-      {"id": "compile", "label": "roadmap 编译", "subtitle": "schema / layout / template", "description": "roadmap-compiler 校验结构、引用、节点文字与线路标签位置；使用包内 api-sheji 风格模板，自动产生 F/A 编号。", "kind": "auto", "role": "pipeline"},
+      {"id": "compile", "label": "roadmap 编译", "subtitle": "schema / layout / template", "description": "roadmap-compiler 校验结构、引用、节点文字与线路标签位置；使用包内 Dataiyi 风格模板，自动产生 F/A 编号。", "kind": "auto", "role": "pipeline"},
       {"id": "output", "label": "原子 HTML", "subtitle": "shared atomic publication", "description": "roadmap renderer 复用 shared/cli.mjs writeStandaloneHtml 的同一原子发布实现。禁止覆盖已有输出，输入文件不能成为输出。", "kind": "auto", "role": "pipeline"},
       {"id": "artifact", "label": "产物登记", "subtitle": "successful HTML artifact", "description": "lib/index.js：普通任务只有 completed 且 result.ok 才能打开；preview 还要求有已验证产物，不把 checking/needs-fix 冒充成功。", "kind": "auto", "role": "consume"},
       {"id": "open", "label": "原生打开", "subtitle": "POST action=open", "description": "openArtifact 检查绝对 HTML 路径与普通文件后调用 macOS /usr/bin/open；打开不是代码部署。", "kind": "manual", "role": "extra"},
@@ -72,7 +72,7 @@
   ],
   "boundaries": [
     "核对来源是本地插件源码和打包 roadmap renderer，不是当前 Host 进程的部署证明。",
-    "style 与交互脚本按 api-sheji 原模板保留；仅 FLOW/API 数据替换，所有 authored 字符串先转义以保护节点提示的 innerHTML。",
+    "style 与交互脚本按 Dataiyi 原模板保留；仅 FLOW/API 数据替换，所有 authored 字符串先转义以保护节点提示的 innerHTML。",
     "默认自动排布并避开无关站点；长标签或密集图超出固定画布容量时明确报错，需缩短文字或减小单图范围。",
     "先核对策略、会话与新输出路径，再查 schema/layout 和 roadmap-v1 门禁，最后才检查 Host 加载与桌面交互。"
   ]

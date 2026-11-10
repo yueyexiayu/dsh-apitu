@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://apitu.local/schemas/roadmap.schema.json",
-  "title": "api-sheji feature and API roadmap v1",
+  "title": "Dataiyi feature and API roadmap v1",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "meta", "flow", "api", "rules", "consumption", "lifecycle", "pages_commands", "boundaries"],

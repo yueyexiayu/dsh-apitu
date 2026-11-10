@@ -1,6 +1,6 @@
 # Roadmap: Chinese feature + API station maps
 
-Use `roadmap` for 功能梳理、路线图、API 说明、F1/A1. It uses the bundled api-sheji/Dataiyi template, not the original five-type viewer. Read `schemas/roadmap.schema.json` and `examples/apitu-plugin.roadmap.json` before authoring.
+Use `roadmap` for 功能梳理、路线图、API 说明、F1/A1. It uses the bundled Dataiyi dual-map template, not the original five-type viewer. Read `schemas/roadmap.schema.json` and `examples/apitu-plugin.roadmap.json` before authoring.
 
 ## Authoring contract
 

@@ -27,9 +27,9 @@ function tmp(t) {
 const invoke = (args, extra = {}) => spawnSync(process.execPath, [renderer, ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, APITU_NO_CLOBBER: '1', APITU_DIAGNOSTIC_FORMAT: 'json' }, ...extra });
 const expectDiagnostic = (fn, code) => assert.throws(fn, error => error.apituDiagnostics?.some(item => item.code === code));
 
-// These two baseline hashes were independently captured from the installed
-// api-sheji template on 2026-10-08; tests do not need that skill at runtime.
-test('bundled stylesheet and interaction script preserve exact api-sheji bytes', () => {
+// These two baseline hashes were independently captured from the original
+// Dataiyi dual-map template on 2026-10-08; tests do not need that skill at runtime.
+test('bundled stylesheet and interaction script preserve exact Dataiyi template bytes', () => {
   const template = fs.readFileSync(ROADMAP_TEMPLATE, 'utf8');
   assert.equal(sha(template.match(/<style>[\s\S]*?<\/style>/)[0]), 'b9c45ea1d285716f8b2e67efa6543e3fcb4f1be3d0d123aab048e49535d1c8ac');
   assert.equal(sha(template.match(/<script>[\s\S]*?<\/script>/)[0]), '4a86f111ce1b299bbf4b8fa06a61476f6484c603a272cc52ca7ed4280286f4d9');
