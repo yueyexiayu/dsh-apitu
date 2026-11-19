@@ -4,7 +4,7 @@
   <p><strong>Turn the current session’s ideas and code evidence into local interactive HTML diagrams.</strong></p>
   <p>DeepSeek Harness desktop plugin: Chinese sidebar + the <code>apitu</code> tool. No extra model account or API key.</p>
   <p><a href="README.md">简体中文</a> · <strong>English</strong></p>
-  <p><a href="package.json">v1.2.7</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
+  <p><a href="package.json">v1.2.8</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
   <p><a href="#install-and-use">Install</a> · <a href="#capabilities-and-limits">Capabilities</a> · <a href="#execution-policy-127">Execution policy</a> · <a href="#runtime">Runtime</a> · <a href="#development-checks">Checks</a></p>
 </div>
 
@@ -14,7 +14,7 @@ Local DSH plugin: turn ideas, requirements, or repository evidence from the curr
 
 ## Install and use
 
-Plugin version `1.2.7`, vendored core id `3.1.0`, with local defect fixes. This is not an upstream core release. Desktop loads it as a **profile bundle** (`dependencies` + `dsh.profile.bundles`); the package patch `name` is `apitu`. After edits, **quit DeepSeek Harness with ⌘Q and reopen**. A written file does not prove the desktop loaded the new code. After restart, confirm `version: "1.2.7"` via the `guide` tool or the sidebar GET for this session, then check tasks, session policy, and preview. A stale `1.2.2` response from an old process is not proof.
+Plugin version `1.2.8`, vendored core id `3.1.0`, with local defect fixes. This is not an upstream core release. Desktop loads it as a **profile bundle** (`dependencies` + `dsh.profile.bundles`); the package patch `name` is `apitu`. After edits, **quit DeepSeek Harness with ⌘Q and reopen**. A written file does not prove the desktop loaded the new code. After restart, confirm `version: "1.2.8"` via the `guide` tool or the sidebar GET for this session, then check tasks, session policy, and preview. A stale `1.2.2` response from an old process is not proof.
 
 ```sh
 export DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
@@ -58,11 +58,11 @@ Write JSON with ordinary DSH file tools, then:
 - Task-list polling returns status, capped diagnostics, artifacts, and preview metadata; complete stdout/stderr/data loads on demand by `jobId`. Preview SHA-256 verification is cached until the artifact identity or generation changes.
 - Ordinary tasks cap at 180 seconds and 2 MiB output. One running job per session; other sessions are not blocked. Host unload stops previews through `ctx.effect`; preview stop signals the process group.
 
-## Execution policy (1.2.7)
+## Execution policy (1.2.8)
 
 Automatic browser-check / visual-check / finalize use owned, anonymous, true-headless `web-regression` batches. They do not borrow the Chrome extension, the user login profile, or a native window. There is no anonymous or GUI fallback.
 
-The shared resolver artifact in `vendor/browser-execution/` is the same source-provenance closure consumed by chrome/huoqu. Current private off-cycle browser-use tarball is `0.2.1-alpha.2.browser-policy.1`. Vendored core `3.1.0` is an upstream identity, not this plugin package version.
+The shared resolver is now **inlined** under `vendor/core/browser-policy/` (`execution.js`, `headless-engine.js`, plus `manifest.json`) and no longer depends on any `@deepseek-ai/dsh-browser-use` npm package. DSH stopped publishing that package at `0.2.2-rc.5` (none of the 355 bundled official packages carries it), so depending on it would mean shipping a private tarball copy that drifts forever. The two inlined modules are the upstream implementation's zero-dependency pure functions kept verbatim; `manifest.json` records the source version `0.2.1-alpha.4.browser-policy.1` and source provenance SHA-256 `1a0d4cb9021826ef0cbba2f63a0fd07d4f295fd01418f5e61754c9b897a362a8` (upstream license MIT). The plugin's only remaining dependency is `playwright-core`; the previous vendored cordis / cosmokit / dsh-brand / standard-schema closure is gone. Vendored core `3.1.0` is an upstream identity, not this plugin package version.
 
 ## Runtime
 

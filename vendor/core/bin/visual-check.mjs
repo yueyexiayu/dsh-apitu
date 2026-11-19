@@ -1,15 +1,23 @@
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import { claimCliBrowser, settleCliBrowser, observeCliBrowser, finishCliBrowser, stageCliReceipt, OwnedProcessTree } from './browser-owner.mjs';
-import { createRequire } from 'node:module';
-const policyManifest = createRequire(import.meta.url)('@deepseek-ai/dsh-browser-use/package.json');
-export const BROWSER_POLICY_PACKAGE = Object.freeze({ name: policyManifest.name, version: policyManifest.version, localArtifactVersion: policyManifest.dshLocalArtifactVersion, sourceSha256: policyManifest.dshSourceArtifact?.sourceSha256 });
 import { resolveHeadlessBrowser } from './headless-browser.mjs';
 import { createHash, randomUUID } from 'node:crypto';
-import { parseBrowserExecutionRequest, resolveBrowserExecution, validateBrowserCapabilities, validateBrowserExecution } from '@deepseek-ai/dsh-browser-use/execution';
-import fs from 'node:fs';
+import { parseBrowserExecutionRequest, resolveBrowserExecution, validateBrowserCapabilities, validateBrowserExecution } from '../browser-policy/execution.js';
+import policyManifest from '../browser-policy/manifest.json' with { type: 'json' };
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+
+// 浏览器策略代码已内联到 ../browser-policy/，不再依赖停发的 @deepseek-ai/dsh-browser-use。
+// 溯源字段与 huoqu 侧共用同一份 manifest.json。
+export const BROWSER_POLICY_PACKAGE = Object.freeze({
+  name: policyManifest.name,
+  version: policyManifest.version,
+  localArtifactVersion: policyManifest.dshLocalArtifactVersion,
+  sourceSha256: policyManifest.dshSourceArtifact?.sourceSha256,
+  vendored: true,
+});
 import {
   DESKTOP_READABILITY_VIEWPORT,
   MIN_PROJECTED_NODE_TEXT_PX,

@@ -4,7 +4,7 @@
   <p><strong>把当前会话里的想法和代码证据做成可交互的本地 HTML 图。</strong></p>
   <p>DeepSeek Harness 桌面插件：中文右侧栏 + 工具 <code>apitu</code>。不另配模型账号或 API Key。</p>
   <p><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
-  <p><a href="package.json">v1.2.7</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
+  <p><a href="package.json">v1.2.8</a> · <a href="LICENSE">MIT</a> · <a href="https://github.com/topics/dsh-plugin">dsh-plugin</a></p>
   <p><a href="#安装与使用">安装与使用</a> · <a href="#完整能力与边界">能力与边界</a> · <a href="#执行策略127">执行策略</a> · <a href="#运行环境">运行环境</a> · <a href="#开发验证">验证</a></p>
 </div>
 
@@ -14,7 +14,7 @@
 
 ## 安装与使用
 
-当前执行策略接入版为插件 `1.2.7`，vendored core 标识 `3.1.0`，带本地缺陷修复，不冒充上游新发行版。本机按 **profile bundle** 加载（`package.json` 的 `dependencies` + `dsh.profile.bundles`），包内 patch 的 `name` 为 `apitu`。修改后请 **⌘Q 完全退出 DeepSeek Harness 后重新打开**；文件已写入不能单独证明桌面加载了最新版。重启后用工具 `guide` 或当前会话的侧栏 GET 响应确认 `version: "1.2.7"`，再验收任务列表、会话策略和预览；旧进程的 `1.2.2` 响应不能证明新代码已生效。
+当前执行策略接入版为插件 `1.2.8`，vendored core 标识 `3.1.0`，带本地缺陷修复，不冒充上游新发行版。本机按 **profile bundle** 加载（`package.json` 的 `dependencies` + `dsh.profile.bundles`），包内 patch 的 `name` 为 `apitu`。修改后请 **⌘Q 完全退出 DeepSeek Harness 后重新打开**；文件已写入不能单独证明桌面加载了最新版。重启后用工具 `guide` 或当前会话的侧栏 GET 响应确认 `version: "1.2.8"`，再验收任务列表、会话策略和预览；旧进程的 `1.2.2` 响应不能证明新代码已生效。
 
 ```sh
 export DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
@@ -68,13 +68,13 @@ git clone https://github.com/yueyexiayu/dsh-apitu.git "$DSH_HOME/plugins/apitu"
 - cwd 必须来自真实会话目录或用户显式填写，不用 Host 进程目录猜测。侧栏 GET 会返回当前会话 cwd 供预填，用户仍可改。仅支持本地文件系统。
 - 普通任务最多运行 180 秒，输出上限 2 MiB；超限/取消明确失败。侧栏任务列表只返回状态、错误摘要、产物和预览元数据，完整 stdout/stderr/data 在展开任务时按 `jobId` 加载；预览 HTML 仅在文件身份或 generation 变化时重算 SHA-256。持续 preview 就绪后不受普通任务期限限制，但同时最多 8 个活动预览；结束预览最多保留 32 条、30 分钟，超过容量/期限会回收内存记录。对话与侧栏共用最近任务注册表；同一会话同时只能有一个 running 任务，不同会话互不阻塞。终态任务最多约 30 条/24 小时，活动任务不会因历史上限被提前丢失；重启不删除磁盘产物。Host 卸载通过 `ctx.effect` 停止预览，preview 停止信号发给进程组。
 
-## 执行策略（1.2.7）
+## 执行策略（1.2.8）
 
 所有自动 browser-check/visual-check/finalize 使用 owned、anonymous、true headless 的 `web-regression` 批次；不借 Chrome 扩展、用户登录 profile 或原生窗口。backend 是 CDP pipe。Host 把真实 Session ID、job/task batch 与 operation cwd 传给 CLI；直接 CLI 使用自己的进程 session/batch，不能误报为用户会话。receipt 记录 execution request、真实 scope/backend/mode/ownership/identity、固定磁盘 identity 与运行中 `Browser.getVersion`，无匿名或 GUI fallback。
 
 默认 resolver、finalize 预构造，以及直接 `new ChromeVisualBrowser(explicitPath, options)` 均验证实际 pin package/完整二进制安装，再由官方 core 验证最终 launch 参数。显式 GUI/脚本/其他版本/错误 mode 在 spawn 前拒绝，不靠调用者填写 `kind` 或 `verified` 自证。当前 adapter 不支持独立 context lease、authenticated-state 或私有原生下载目录请求，明确能力错误，不以空操作冒支持；导出通过本任务 CDP/文件事务写入其明确输出路径。生产 constructor/launch-args 不接受 `spawnImpl`/`getuid`，browser/visual/finalize 不接受 `browserFactory`/`createBrowser`/`resolveChrome` 等旧 acquisition hooks；未知 options 在 resolver、profile、receipt 或 artifact 操作之前明确拒绝，测试改用 test-only builtin mock/VM。finalize 通过模块私有认证的真实 owned handle 复用一个 browser；engine/scope/original sessionPromise/实际 runtime metadata 不取可覆盖的 instance property，缺失 metadata、伪造 prototype、closed/closing 或 scope 不符明确失败，不用 unreported metadata 假装 gate 通过。
 
-通用 resolver 来自 `vendor/browser-execution/` 的同一官方 source-provenance artifact，与 Chrome/huoqu 消费同一 SHA；五包闭包相对 file 依赖与实际 npm lock 固定。插件只保留静态 pin JSON/tiny wrapper，不维护策略副本、公共旧 core 或绝对源码路径。共享产物升级需同步三个消费者 SHA 与安装锁。当前实际 private off-cycle 版本为 `0.2.1-alpha.2.browser-policy.1`，tarball SHA-256 `efae81d6fab57b12aa5c3a4663f42e379344b5a0a9b61b302a8ee55b3ae80b14`，source provenance SHA-256 `60bf07c6a6f8d5385aee45cb541128127e4645a3061532a93e6f1c47f88cc369`；不是官方 full release，也未修改已安装 ASAR。metadata 的 `policyPackage` 通过标准 package export 读取实际 installed version/localArtifactVersion/sourceSha256，不以 filename 或缓存常量自证。`vendor/core` 的 `3.1.0` 是 vendored 上游来源标识，并非本地插件包版本。
+通用 resolver 已**内联**到 `vendor/core/browser-policy/`（`execution.js`、`headless-engine.js` 与 `manifest.json`），不再依赖任何 `@deepseek-ai/dsh-browser-use` npm 包。原因：DSH 自 `0.2.2-rc.5` 起不再发布该包（应用内 355 个官方包里已无此包），继续引用只能靠私有 tarball 副本，版本会永久漂移。内联的两个模块是上游实现里**零第三方依赖的纯函数**，逻辑逐字保留；`manifest.json` 记录来源版本 `0.2.1-alpha.4.browser-policy.1` 与 source provenance SHA-256 `1a0d4cb9021826ef0cbba2f63a0fd07d4f295fd01418f5e61754c9b897a362a8`，上游许可 MIT。插件依赖只剩 `playwright-core`，不再有 vendored cordis / cosmokit / dsh-brand / standard-schema 闭包。metadata 的 `policyPackage` 从该 manifest 读取，不以文件名或缓存常量自证。`vendor/core` 的 `3.1.0` 是 vendored 上游来源标识，并非本地插件包版本。
 
 Host 管理的批次把 browser/visual receipt、finalize full/summary receipt 先写入本批次自有 TMPDIR，不提前在用户输出提交 pass。Host 等 CLI 与原组及已知后代退出，核对容器 canonical path/dev/ino 并删除成功后，才向从真实命令参数计算的精确目标以 no-clobber 提交；取消、CLI 失败或容器清理失败不提交 pass。中间 deliver HTML、截图或 contact sheet 存在不等于整批成功。Node 独立 CLI/library 没有 Host 容器，仍等待自己的 browser/profile 释放后按原事务发布。此处为源码行为说明，不代表当前运行 Host 已重载或真实故障验收已完成。
 
